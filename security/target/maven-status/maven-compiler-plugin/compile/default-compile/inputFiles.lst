@@ -1,7 +1,0 @@
-/home/cchen/javalearn/oj/security/src/main/java/com/edu/oj/config/RestAuthenticationEntryPoint.java
-/home/cchen/javalearn/oj/security/src/main/java/com/edu/oj/config/SecurityConfig.java
-/home/cchen/javalearn/oj/security/src/main/java/com/edu/oj/controller/LoginController.java
-/home/cchen/javalearn/oj/security/src/main/java/com/edu/oj/service/CustomUserDetailsService.java
-/home/cchen/javalearn/oj/security/src/main/java/com/edu/oj/service/LoginService.java
-/home/cchen/javalearn/oj/security/src/main/java/com/edu/oj/service/RegisterService.java
-/home/cchen/javalearn/oj/security/src/main/java/com/edu/oj/service/UserService.java
