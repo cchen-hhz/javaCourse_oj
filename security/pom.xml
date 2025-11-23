@@ -13,7 +13,7 @@
     <dependencies>
         <dependency>
             <groupId>com.edu.oj</groupId>
-            <artifactId>dbserver</artifactId>
+            <artifactId>oj-dao</artifactId>
         </dependency>
         <dependency>
             <groupId>com.edu.oj</groupId>

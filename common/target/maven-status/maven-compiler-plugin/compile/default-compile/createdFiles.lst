@@ -1,3 +1,7 @@
+com/edu/oj/dto/LoginRegisterDto.class
+com/edu/oj/entity/Role.class
 com/edu/oj/enums/Role.class
 com/edu/oj/entity/User.class
-com/edu/oj/entity/Role.class
+com/edu/oj/response/ApiResponse.class
+com/edu/oj/response/LoginRegisterResponse.class
+com/edu/oj/exceptions/RegisterException.class

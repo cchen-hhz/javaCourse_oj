@@ -31,7 +31,7 @@
 			</dependency>
 			<dependency>
 				<groupId>com.edu.oj</groupId>
-				<artifactId>dbserver</artifactId>
+				<artifactId>oj-dao</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
