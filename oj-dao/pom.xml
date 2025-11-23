@@ -24,5 +24,6 @@
             <groupId>com.edu.oj</groupId>
             <artifactId>common</artifactId>
         </dependency>
+
     </dependencies>
 </project>
