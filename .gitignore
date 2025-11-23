@@ -1,0 +1,32 @@
+# Maven
+target/
+*.log
+*.out
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+hs_err_pid*
+
+# IDE - VS Code
+.vscode/
+*.code-workspace
+
+# IDE - IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# IDE - Eclipse
+.settings/
+.classpath
+.project
+.factorypath
+bin/
+
+# OS
+.DS_Store
+Thumbs.db
