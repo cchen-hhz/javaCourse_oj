@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.edu.oj</groupId>
+    <artifactId>oj-builder</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>oj-builder</name>
+    <description>Aggregator POM for Online Judge Project</description>
+
+    <modules>
+        <module>parent</module>
+        <module>common</module>
+        <module>dbserver</module>
+        <module>security</module>
+        <module>main</module>
+    </modules>
+</project>
