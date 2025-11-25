@@ -27,6 +27,11 @@
             <artifactId>security</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.edu.oj</groupId>
+            <artifactId>web</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- Web 依赖 (如果 common 中没有包含所有需要的) -->
         <dependency>
@@ -52,6 +57,9 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.edu.oj.OjApplication</mainClass>
+                </configuration>
             </plugin>
         </plugins>
     </build>

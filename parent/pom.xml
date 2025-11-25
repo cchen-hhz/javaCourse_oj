@@ -39,6 +39,11 @@
 				<artifactId>security</artifactId>
 				<version>${project.version}</version>
 			</dependency>
+			<dependency>
+				<groupId>com.edu.oj</groupId>
+				<artifactId>web</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
 			<!-- Third Party Dependencies -->
 			<dependency>

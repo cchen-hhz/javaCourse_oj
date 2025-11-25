@@ -1,4 +1,9 @@
 spring:
+  application:
+    name: oj-application
+  web:
+    resources:
+      add-mappings: false
   datasource:
     url: jdbc:mysql://localhost:3306/oj_db
     username: oj_admin
@@ -9,4 +14,9 @@ mybatis:
   configuration:
     map-underscore-to-camel-case: true
   type-aliases-package: com.edu.oj.entity
+
+
+logging:
+  level:
+    web: DEBUG
   
