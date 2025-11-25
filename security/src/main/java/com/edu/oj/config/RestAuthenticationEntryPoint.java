@@ -1,28 +1,29 @@
 package com.edu.oj.config;
 
-import com.edu.oj.response.ApiResponse;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.Resource; // 注意这里导入的是 jakarta.annotation.Resource
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.io.IOException;
 
 @Component
 public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    @Qualifier("handlerExceptionResolver")
+    @Autowired
+    private HandlerExceptionResolver resolver;
 
     @Override
+    @SuppressWarnings("null")
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setContentType("application/json;charset=UTF-8");
-        
-        ApiResponse<Void> apiResponse = ApiResponse.error(401, "Authentication Failed: " + authException.getMessage());
-        
-        response.getWriter().write(objectMapper.writeValueAsString(apiResponse));
+        resolver.resolveException(request, response, null, authException);
     }
 }

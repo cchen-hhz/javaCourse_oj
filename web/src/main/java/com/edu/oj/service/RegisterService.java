@@ -2,16 +2,22 @@ package com.edu.oj.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
-import com.edu.oj.dto.LoginRegisterDto;
+import com.edu.oj.dto.RegisterDto;
 import com.edu.oj.exceptions.RegisterException;
 import com.edu.oj.response.LoginRegisterResponse;
+
+import lombok.extern.slf4j.Slf4j;
+
 import com.edu.oj.entity.User;
-import com.edu.oj.entity.Role;
 import java.time.LocalDateTime;
 
 @Service
+@Slf4j
 public class RegisterService {
+    @Autowired
+    PasswordEncoder passwordEncoder;
 
     @Autowired
     UserService userService;
@@ -23,6 +29,7 @@ public class RegisterService {
      * @throws RegisterException
      */
     private LoginRegisterResponse registerUser(User user) throws RegisterException {
+        System.out.println("Registering user: " + user.getUsername());
         user.setCreatedAt(LocalDateTime.now());
         user.setEnabled(true);
         int result = userService.registerUser(user);
@@ -32,30 +39,18 @@ public class RegisterService {
         return new LoginRegisterResponse(user, "Registration successful");
     }
 
-    private void SetUserDto(User user, LoginRegisterDto dto) {
+    private void SetUserDto(User user, RegisterDto dto) {
         user.setUsername(dto.getUsername());
-        user.setPassword(dto.getPassword());
+        //没加密密码，fuck
+        user.setPassword(passwordEncoder.encode(dto.getPassword()));
         user.setDescription(dto.getDescription());
     }
 
-    public LoginRegisterResponse registerROOT(LoginRegisterDto dto) throws RegisterException {
+    public LoginRegisterResponse register(RegisterDto dto) throws RegisterException {
         User user = new User();
         SetUserDto(user, dto);
-        user.setRole(Role.ROOT);
+        user.setRole(dto.getRole());
         return registerUser(user);
     }
 
-    public LoginRegisterResponse registerADMIN(LoginRegisterDto dto) throws RegisterException {
-        User user = new User();
-        SetUserDto(user, dto);
-        user.setRole(Role.ADMIN);
-        return registerUser(user);
-    }
-
-    public LoginRegisterResponse registerUSER(LoginRegisterDto dto) throws RegisterException {
-        User user = new User();
-        SetUserDto(user, dto);
-        user.setRole(Role.USER);
-        return registerUser(user);
-    }
 }

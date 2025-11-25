@@ -5,19 +5,25 @@ import com.edu.oj.response.LoginRegisterResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.edu.oj.dto.LoginRegisterDto;
+import com.edu.oj.dto.LoginDto;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
+@Slf4j
 public class LoginService {
+    @Autowired
+    PasswordEncoder passwordEncoder;
+
     @Autowired
     AuthenticationManager authenticationManager;
 
@@ -31,7 +37,7 @@ public class LoginService {
      * @return LoginRegisterResponse
      * @throws AuthenticationException
      */
-    public LoginRegisterResponse login(LoginRegisterDto dto, HttpServletRequest request) throws AuthenticationException{
+    public LoginRegisterResponse login(LoginDto dto, HttpServletRequest request) throws AuthenticationException{
         Authentication authentication = authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(
                 dto.getUsername(), 
