@@ -10,6 +10,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -33,7 +34,9 @@ public class CodeExecutor {
     private static final int STATUS_ACCEPTED = 0;
     private static final int STATUS_WRONG_ANSWER = 1;
     private static final int STATUS_TIME_LIMIT_EXCEEDED = 2;
+    private static final int STATUS_MEMORY_LIMIT_EXCEEDED = 3;
     private static final int STATUS_RUNTIME_ERROR = 4;
+    private static final int STATUS_COMPILATION_ERROR = 5;
     private static final int STATUS_SYSTEM_ERROR = 6;
 
     /**
@@ -47,6 +50,16 @@ public class CodeExecutor {
     public JudgeResult execute(Long submissionId, Long problemId, String language) {
         log.info("Starting execution for submission {} on problem {} with language {}", 
                 submissionId, problemId, language);
+
+        // Validate submissionId and problemId to prevent path traversal attacks
+        if (submissionId == null || submissionId < 0) {
+            log.error("Invalid submissionId: {}", submissionId);
+            return buildErrorResult(STATUS_SYSTEM_ERROR, "Invalid submission ID");
+        }
+        if (problemId == null || problemId < 0) {
+            log.error("Invalid problemId: {}", problemId);
+            return buildErrorResult(STATUS_SYSTEM_ERROR, "Invalid problem ID");
+        }
 
         try {
             // Read code file
@@ -297,7 +310,7 @@ public class CodeExecutor {
             }
         }
         // Sort by filename to ensure consistent order
-        inputFiles.sort((a, b) -> a.getFileName().toString().compareTo(b.getFileName().toString()));
+        inputFiles.sort(Comparator.comparing(path -> path.getFileName().toString()));
         return inputFiles;
     }
 
