@@ -1,8 +1,5 @@
 package com.edu.oj.executor;
 
-import lombok.Data;
-
-@Data
 public class ExecutionResult {
     private String output;
     private String error;
@@ -18,3 +15,10 @@ public class ExecutionResult {
         return exitCode == 0;
     }
 }
+/*
+docker run --rm
+  -v "$PWD/data/submission/1":/app/code:ro \
+  -v "$PWD/data/problem/1/testCases":/app/input:ro \
+  python-judge \
+  code.py /app/input/1.in
+ */

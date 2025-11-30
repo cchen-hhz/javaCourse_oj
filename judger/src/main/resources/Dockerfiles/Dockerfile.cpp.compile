@@ -1,0 +1,9 @@
+FROM gcc:latest
+
+WORKDIR /app
+RUN mkdir -p /app/src /app/build
+
+COPY run-compile.sh /app/run-compile.sh
+RUN chmod +x /app/run-compile.sh
+
+CMD ["/app/run-compile.sh"]
