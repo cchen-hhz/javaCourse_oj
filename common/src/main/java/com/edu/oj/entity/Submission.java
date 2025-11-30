@@ -5,11 +5,12 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-public class EvaluationRecord {
+public class Submission {
     private Long id;
-    private LocalDateTime time;
-    private String status;
+    private LocalDateTime submissionTime;
+    private Status status;
     private Long userId;
-    private String Language;
+    private Long problemId;
+    private String language;
     private Short score;
 }
