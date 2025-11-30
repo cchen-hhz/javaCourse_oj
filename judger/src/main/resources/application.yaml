@@ -19,4 +19,9 @@ mybatis:
 logging:
   level:
     web: DEBUG
-  
+
+judger:
+  data:
+    base-path: data
+  docker:
+    timeout-seconds: 30
