@@ -1,7 +1,10 @@
 # Maven
 target/
 *.log
+
+# Ignore .out except in data directory
 *.out
+!data/**/*.out
 
 # Java
 *.class
