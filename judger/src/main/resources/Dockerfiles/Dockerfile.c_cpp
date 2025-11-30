@@ -1,0 +1,8 @@
+FROM gcc:latest
+ARG SUBMISSION_ID
+WORKDIR /app
+RUN mkdir -p /app/code
+COPY data/submission/${SUBMISSION_ID}/code.cpp /app/code/main.cpp
+RUN g++ -o /app/code/main /app/code/main.cpp
+# 启动命令
+CMD ["/app/code/main"]

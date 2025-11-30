@@ -1,0 +1,8 @@
+FROM python:3.9-slim
+ARG SUBMISSION_ID
+WORKDIR /app
+RUN mkdir -p /app/code
+# 复制code.py到容器内
+COPY data/submission/${SUBMISSION_ID}/code.py /app/code/main.py
+# 启动命令
+CMD ["python", "/app/code/main.py"]
