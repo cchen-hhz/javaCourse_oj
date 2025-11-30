@@ -1,6 +1,5 @@
 package com.edu.oj.config;
 
-import jakarta.annotation.Resource; // 注意这里导入的是 jakarta.annotation.Resource
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
