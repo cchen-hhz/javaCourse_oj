@@ -10,6 +10,6 @@ public class Submission {
     private LocalDateTime time;
     private String status;
     private Long userId;
-    private String Language;
+    private String language;
     private Short score;
 }
