@@ -164,29 +164,48 @@ public class CodeExecutor {
             request.setTimeLimitMs(limits.getTimeLimitMs());
             request.setMemoryLimitMb(limits.getMemoryLimitMb());
             request.setCaseId(caseId);
-            // 按语言分支设置 codePath / executablePath
             Language lang = codeFileInfo.getLanguage();
             if (lang == Language.PYTHON) {
-                // Python：运行阶段用源码 + 输入文件，不需要 executablePath
                 request.setCodePath(codeFileInfo.getCodePath());
             } else {
-                // C / CPP（以后 Java 也可以放这）：运行阶段用已编译好的可执行文件
                 request.setExecutablePath(executablePath);
             }
 
             // 真正执行
             RunResult runResult = codeRunner.runInSandbox(request);
 
+            String timeInfo = runResult.getMessage(); // 可能是 "Execution time: X ms" 或 null
+            System.out.println(timeInfo);
             if (!runResult.isSuccess()) {
-                // 运行失败（TLE / RE 等）
-                return new TestCaseResult(index, TestCaseStatus.RE, "Runtime Error: " + runResult.getMessage(), inFile, outFile, runResult.getStdout(), expectedOutput);
+                String msg = "Runtime Error";
+                if (timeInfo != null) {
+                    msg += " (" + timeInfo + ")";
+                } else if (runResult.getMessage() != null) {
+                    msg += ": " + runResult.getMessage();
+                }
+                return new TestCaseResult(index, TestCaseStatus.RE, msg, inFile, outFile, runResult.getStdout(), expectedOutput);
             }
 
             String actualOutput = runResult.getStdout();
             boolean accepted = normalizeOutput(actualOutput)
                     .equals(normalizeOutput(expectedOutput));
 
-            return new TestCaseResult(index, accepted ? TestCaseStatus.AC : TestCaseStatus.WA, accepted ? null : "Wrong Answer", inFile, outFile, actualOutput, expectedOutput);
+            String msg;
+            if (accepted) {
+                msg = (timeInfo != null) ? ("Accepted (" + timeInfo + ")") : "Accepted";
+            } else {
+                msg = (timeInfo != null) ? ("Wrong Answer (" + timeInfo + ")") : "Wrong Answer";
+            }
+
+            return new TestCaseResult(
+                    index,
+                    accepted ? TestCaseStatus.AC : TestCaseStatus.WA,
+                    msg,
+                    inFile,
+                    outFile,
+                    actualOutput,
+                    expectedOutput
+            );
         } catch (Exception e) {
             return new TestCaseResult(index, TestCaseStatus.RE, "Exception: " + e.getMessage(), inFile, outFile, null, null);
         }

@@ -202,16 +202,16 @@ public class DockerCodeRunner implements CodeRunner {
         Thread ioThread = collectIO(process, stdoutBuf, stderrBuf);
 
         long start = System.currentTimeMillis();
-        boolean finished = process.waitFor(timeLimitMs, TimeUnit.MILLISECONDS);
+        boolean finished = process.waitFor(timeLimitMs+4000, TimeUnit.MILLISECONDS);
         long used = System.currentTimeMillis() - start;
-        // 可选调试
-         System.out.println("Docker run used " + used + " ms, finished=" + finished);
+        System.out.println("Docker run used " + used + " ms, finished=" + finished);
 
         if (!finished) {
             killContainer(containerName);
             process.destroyForcibly();
             try { ioThread.join(200); } catch (InterruptedException ignored) {}
-            return RunResult.fail("Time Limit Exceeded", stdoutBuf.toString());
+            // 这是“整体 docker 超时”（包括容器启动在内）
+            return RunResult.fail("Time Limit Exceeded (docker)", stdoutBuf.toString());
         }
 
         try { ioThread.join(200); } catch (InterruptedException ignored) {}
@@ -220,14 +220,49 @@ public class DockerCodeRunner implements CodeRunner {
         String stdout = stdoutBuf.toString();
         String stderr = stderrBuf.toString();
 
-        if (exit != 0) {
-            return RunResult.fail("Runtime Error (exit " + exit + ")", stderr);
+// 1) 从 stderr 里解析容器内部测得的执行时间
+        Long execTimeMs = parseExecTime(stderr);  // 新增的辅助方法，见下方
+
+// 2) 如果程序执行时间超过题目 timeLimitMs，就直接判 TLE
+        Long limitMs = request.getTimeLimitMs();
+        if (execTimeMs != null && limitMs != null && execTimeMs > limitMs) {
+            // 可以把原 stderr 一并返回，方便调试
+            RunResult tle = RunResult.fail("Time Limit Exceeded (exec " + execTimeMs + " ms > " + limitMs + " ms)", stderr);
+            return tle;
         }
-        return RunResult.success(stdout);
+
+// 3) 再按原来的逻辑处理 exit code
+        if (exit != 0) {
+            RunResult r = RunResult.fail("Runtime Error (exit " + exit + ")", stderr);
+            if (execTimeMs != null) {
+                r.setMessage("Execution time: " + execTimeMs + " ms; " + r.getMessage());
+            }
+            return r;
+        }
+
+        RunResult ok = RunResult.success(stdout);
+        if (execTimeMs != null) {
+            ok.setMessage("Execution time: " + execTimeMs + " ms");
+        }
+        return ok;
     }
 
     // ========== 工具方法 ==========
-
+    private Long parseExecTime(String stderr) {
+        if (stderr == null) return null;
+        Long result = null;
+        String[] lines = stderr.split("\\R"); // 按行分割
+        for (String line : lines) {
+            line = line.trim();
+            if (line.startsWith("__OJ_TIME_MS__=")) {
+                String v = line.substring("__OJ_TIME_MS__=".length()).trim();
+                try {
+                    result = Long.parseLong(v);
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+        return result;
+    }
     private Thread collectIO(Process p, ByteArrayOutputStream outBuf, ByteArrayOutputStream errBuf) {
         Thread t = new Thread(() -> {
             try (InputStream out = p.getInputStream();
