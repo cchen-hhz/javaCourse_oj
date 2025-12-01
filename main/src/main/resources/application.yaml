@@ -15,8 +15,10 @@ mybatis:
     map-underscore-to-camel-case: true
   type-aliases-package: com.edu.oj.entity
 
-
 logging:
   level:
     web: DEBUG
-  
+
+data:
+  problem-file-path: /home/cchen/javalearn/oj/data/problems
+  submission-file-path: /home/cchen/javalearn/oj/data/submissions
