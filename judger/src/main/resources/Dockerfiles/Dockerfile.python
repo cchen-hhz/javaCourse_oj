@@ -1,0 +1,6 @@
+FROM python:3.9-slim
+WORKDIR /app
+RUN mkdir -p /app/code /app/input
+COPY run.python.sh /app/run.sh
+RUN chmod +x /app/run.sh
+CMD ["/app/run.sh"]

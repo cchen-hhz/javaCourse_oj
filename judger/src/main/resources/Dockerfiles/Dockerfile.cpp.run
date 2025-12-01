@@ -1,0 +1,9 @@
+FROM gcc:latest
+
+WORKDIR /app
+RUN mkdir -p /app/build /app/input
+
+COPY run-exec.sh /app/run-exec.sh
+RUN chmod +x /app/run-exec.sh
+
+CMD ["/app/run-exec.sh"]
