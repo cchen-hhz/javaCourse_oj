@@ -15,3 +15,5 @@ mvn spring-boot:run -pl main
 ## Update
 
 - 2025-11-25 注册和登录完成了。
+
+- 2025-11-30 ~ 2025-12-02 写完 judger 的评测核心。——by szm

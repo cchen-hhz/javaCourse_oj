@@ -1,4 +1,4 @@
-package com.edu.oj.executor;
+package com.edu.oj.executor.domain;
 
 public class ExecutionResult {
     private String output;
