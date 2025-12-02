@@ -1,14 +1,18 @@
 package com.edu.oj.executor;
 
+import com.edu.oj.executor.codeRunner.CodeRunner;
+import com.edu.oj.executor.codeRunner.DockerCodeRunner;
+import com.edu.oj.executor.domain.JudgeResult;
+
 public class TestMain {
     public static void main(String[] args) {
         long submissionId = 1L;
         long problemId = 1L;
 
-        CodeExecutor.CodeRunner runner = new DockerCodeRunner();
+        CodeRunner runner = new DockerCodeRunner();
         CodeExecutor executor = new CodeExecutor(runner);
 
-        CodeExecutor.JudgeResult result = executor.judge(submissionId, problemId);
+        JudgeResult result = executor.judge(submissionId, problemId);
 
         System.out.println("Judge success = " + result.isSuccess());
         System.out.println("All AC = " + result.isAllAccepted());

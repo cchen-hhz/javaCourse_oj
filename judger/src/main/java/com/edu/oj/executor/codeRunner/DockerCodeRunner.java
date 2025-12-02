@@ -1,9 +1,9 @@
-package com.edu.oj.executor;
+package com.edu.oj.executor.codeRunner;
 
-import com.edu.oj.executor.CodeExecutor.CodeRunner;
-import com.edu.oj.executor.CodeExecutor.Language;
-import com.edu.oj.executor.CodeExecutor.RunRequest;
-import com.edu.oj.executor.CodeExecutor.RunResult;
+import com.edu.oj.executor.codeRunner.CodeRunner;
+import com.edu.oj.executor.domain.Language;
+import com.edu.oj.executor.domain.RunRequest;
+import com.edu.oj.executor.domain.RunResult;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -14,6 +14,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import static com.edu.oj.executor.util.CollectIO.collectIO;
+import static com.edu.oj.executor.util.KillContainer.killContainer;
+import static com.edu.oj.executor.util.parseExecTime.parseExecTime;
 
 /**
  * 使用 Docker 在沙箱中编译和运行代码。
@@ -30,7 +34,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class DockerCodeRunner implements CodeRunner {
 
-    private static final String DOCKER = "docker";
+    public static final String DOCKER = "docker";
 
     // 镜像名（你要保证这些镜像已经 docker build 或 docker load 好）
     private static final String CPP_COMPILE_IMAGE = "cpp-compile";
@@ -219,10 +223,8 @@ public class DockerCodeRunner implements CodeRunner {
         int exit = process.exitValue();
         String stdout = stdoutBuf.toString();
         String stderr = stderrBuf.toString();
-
 // 1) 从 stderr 里解析容器内部测得的执行时间
         Long execTimeMs = parseExecTime(stderr);  // 新增的辅助方法，见下方
-
 // 2) 如果程序执行时间超过题目 timeLimitMs，就直接判 TLE
         Long limitMs = request.getTimeLimitMs();
         if (execTimeMs != null && limitMs != null && execTimeMs > limitMs) {
@@ -230,7 +232,6 @@ public class DockerCodeRunner implements CodeRunner {
             RunResult tle = RunResult.fail("Time Limit Exceeded (exec " + execTimeMs + " ms > " + limitMs + " ms)", stderr);
             return tle;
         }
-
 // 3) 再按原来的逻辑处理 exit code
         if (exit != 0) {
             RunResult r = RunResult.fail("Runtime Error (exit " + exit + ")", stderr);
@@ -248,40 +249,8 @@ public class DockerCodeRunner implements CodeRunner {
     }
 
     // ========== 工具方法 ==========
-    private Long parseExecTime(String stderr) {
-        if (stderr == null) return null;
-        Long result = null;
-        String[] lines = stderr.split("\\R"); // 按行分割
-        for (String line : lines) {
-            line = line.trim();
-            if (line.startsWith("__OJ_TIME_MS__=")) {
-                String v = line.substring("__OJ_TIME_MS__=".length()).trim();
-                try {
-                    result = Long.parseLong(v);
-                } catch (NumberFormatException ignored) {}
-            }
-        }
-        return result;
-    }
-    private Thread collectIO(Process p, ByteArrayOutputStream outBuf, ByteArrayOutputStream errBuf) {
-        Thread t = new Thread(() -> {
-            try (InputStream out = p.getInputStream();
-                 InputStream err = p.getErrorStream()) {
-                out.transferTo(outBuf);
-                err.transferTo(errBuf);
-            } catch (IOException ignored) {}
-        });
-        t.start();
-        return t;
-    }
 
-    private void killContainer(String name) {
-        try {
-            new ProcessBuilder(DOCKER, "kill", name)
-                    .redirectErrorStream(true)
-                    .start()
-                    .waitFor(1, TimeUnit.SECONDS);
-        } catch (Exception ignored) {
-        }
-    }
+
+
+
 }
