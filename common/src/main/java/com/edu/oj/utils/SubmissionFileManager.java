@@ -13,15 +13,14 @@ public class SubmissionFileManager {
     @Value("${data.submission-file-path}")
     private String submissionFilePath;
 
+    
+
     @Autowired
     ObjectMapper jsonMapper;
 
-    private Path getSubmissionPath(Long submissionId) {
-        return Path.of(submissionFilePath, submissionId.toString());
-    }
-
     private Path getSubmissionResultPath(Long submissionId) {
-        return getSubmissionPath(submissionId).resolve("result.json");
+        Path path = Path.of(submissionFilePath, submissionId.toString());
+        return path.resolve("result.json");
     }
 
     public SubmissionConfig getSubmissionConfig(Long submissionId) throws Exception {

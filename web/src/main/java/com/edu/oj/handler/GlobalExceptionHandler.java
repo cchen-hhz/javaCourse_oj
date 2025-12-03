@@ -1,39 +1,51 @@
 package com.edu.oj.handler;
 
-import com.edu.oj.exceptions.RegisterException;
-import com.edu.oj.response.ApiResponse;
+import com.edu.oj.exceptions.BusinessException;
+import com.edu.oj.exceptions.ResourceNotFoundException;
+import com.edu.oj.response.ErrorResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.server.ResponseStatusException;
+
+import lombok.extern.slf4j.Slf4j;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(ResourceNotFoundException e) {
+        return buildResponse(HttpStatus.NOT_FOUND, e.getMessage());
+    }
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException e) {
+        return buildResponse(HttpStatus.BAD_REQUEST, e.getMessage());
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> handleResponseStatusException(ResponseStatusException e) {
+        HttpStatus status = HttpStatus.valueOf(e.getStatusCode().value());
+        return buildResponse(status, e.getReason());
+    }
+
     @ExceptionHandler(AuthenticationException.class)
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    public ApiResponse<Void> handleAuthenticationException(AuthenticationException e) {
-        return ApiResponse.error(HttpStatus.UNAUTHORIZED.value(), e.getMessage());
-    }
-
-    @ExceptionHandler(RegisterException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiResponse<Void> handleRegisterException(RegisterException e) {
-        return ApiResponse.error(HttpStatus.BAD_REQUEST.value(), e.getMessage());
-    }
-
-    @ExceptionHandler(NoHandlerFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ApiResponse<Void> handleNoHandlerFoundException(NoHandlerFoundException e) {
-        return ApiResponse.error(HttpStatus.NOT_FOUND.value(), "Path not found: " + e.getRequestURL());
+    public ResponseEntity<ErrorResponse> handleAuthenticationException(AuthenticationException e) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, e.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ApiResponse<Void> handleException(Exception e) {
-        e.printStackTrace(); // Log the exception
-        return ApiResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Internal Server Error: " + e.getMessage());
+    public ResponseEntity<ErrorResponse> handleException(Exception e) {
+        log.error("Unhandled exception", e);
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+    }
+
+    @SuppressWarnings("null")
+    private ResponseEntity<ErrorResponse> buildResponse(HttpStatus status, String message) {
+        return ResponseEntity.status(status)
+            .body(ErrorResponse.of(status.value(), status.getReasonPhrase(), message));
     }
 }
