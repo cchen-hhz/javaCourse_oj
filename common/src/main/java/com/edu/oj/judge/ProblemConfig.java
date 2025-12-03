@@ -10,5 +10,7 @@ import lombok.NoArgsConstructor;
 public class ProblemConfig {
     public Long id;
     public String title;
-    public Judge judge; 
+    public Integer numberCount;
+    public Integer timeLimit;
+    public Integer memoryLimit;
 }

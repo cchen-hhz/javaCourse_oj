@@ -1,9 +1,5 @@
 id: 0
 title: Hello world
-judge:
-  number: 10
-  time_limit: 1000
-  memory_limit: 65536
-  testcases:
-    - 1
-    - 2
+number_count: 10
+time_limit: 1000
+memory_limit: 65536

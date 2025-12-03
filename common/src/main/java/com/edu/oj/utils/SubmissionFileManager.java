@@ -13,8 +13,6 @@ public class SubmissionFileManager {
     @Value("${data.submission-file-path}")
     private String submissionFilePath;
 
-    
-
     @Autowired
     ObjectMapper jsonMapper;
 
