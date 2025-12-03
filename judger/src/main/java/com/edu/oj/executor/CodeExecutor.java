@@ -2,10 +2,6 @@ package com.edu.oj.executor;
 
 import com.edu.oj.executor.codeRunner.CodeRunner;
 import com.edu.oj.executor.domain.*;
-import com.edu.oj.executor.util.CompileOnce;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -13,7 +9,6 @@ import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 
 import static com.edu.oj.executor.domain.CodeFileInfo.detectCodeFile;
 import static com.edu.oj.executor.domain.ProblemConfig.loadProblemConfig;

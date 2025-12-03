@@ -1,6 +1,5 @@
 package com.edu.oj.executor.domain;
 
-import com.edu.oj.executor.CodeExecutor;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
