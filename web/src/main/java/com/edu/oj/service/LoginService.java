@@ -27,6 +27,9 @@ public class LoginService {
     @Autowired
     AuthenticationManager authenticationManager;
 
+    @Autowired
+    org.springframework.security.core.session.SessionRegistry sessionRegistry;
+
     @Autowired 
     UserMapper userMapper;
 
@@ -50,6 +53,7 @@ public class LoginService {
         //设置 Session
         HttpSession session = request.getSession(true);
         session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
+        sessionRegistry.registerNewSession(session.getId(), authentication.getPrincipal());
         
         var user = userMapper.findUserByUsername(dto.getUsername());
         

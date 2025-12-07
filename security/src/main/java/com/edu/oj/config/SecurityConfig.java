@@ -13,6 +13,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -21,6 +24,16 @@ public class SecurityConfig {
 
     @Autowired
     private RestAuthenticationEntryPoint authenticationEntryPoint;
+
+    @Bean
+    public SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
+    }
+
+    @Bean
+    public HttpSessionEventPublisher httpSessionEventPublisher() {
+        return new HttpSessionEventPublisher();
+    }
 
     @Bean
     PasswordEncoder passwordEncoder() {
@@ -37,6 +50,10 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 .anyRequest().permitAll()
+            )
+            .sessionManagement(session -> session
+                .maximumSessions(100)
+                .sessionRegistry(sessionRegistry())
             );
             
         return http.build();

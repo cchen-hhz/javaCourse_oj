@@ -9,9 +9,14 @@ import com.edu.oj.entity.Problem;
 public interface ProblemMapper {
     @Select("""
             SELECT COUNT(*) 
-            FORM problems
+            FROM problems
             """)
     int problemCount();
+
+    @Select("""
+            SELECT * FROM problems
+            """)
+    Problem[] getAllProblems();
 
     @Select("""
             SELECT * FROM problems
@@ -20,8 +25,8 @@ public interface ProblemMapper {
     Problem findProblemById(Long problemId);
 
     @Insert("""
-            INSERT INTO problems (title)
-            VALUES (#{title})
+            INSERT INTO problems (id, title)
+            VALUES (#{id}, #{title})
             """)
     int insertProblem(Problem problem);
 }

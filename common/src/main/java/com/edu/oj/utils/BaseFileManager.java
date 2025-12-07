@@ -1,6 +1,7 @@
 package com.edu.oj.utils;
 
-import com.edu.oj.exceptions.ResourceNotFoundException;
+import com.edu.oj.exceptions.BusinessException;
+import com.edu.oj.exceptions.CommonErrorCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 
@@ -10,8 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
 /**
- * 基础文件管理器
- * 提供通用的原子读写操作
+ * 文件管理器
  */
 @Slf4j
 public abstract class BaseFileManager {
@@ -33,7 +33,7 @@ public abstract class BaseFileManager {
      */
     protected <T> T readConfig(Path filePath, Class<T> clazz, String resourceType, Object resourceId) throws IOException {
         if (!Files.exists(filePath)) {
-            throw new ResourceNotFoundException(resourceType, resourceId);
+            throw new BusinessException(CommonErrorCode.RESOURCE_NOT_FOUND, String.format("%s not found: %s", resourceType, resourceId));
         }
         return objectMapper.readValue(filePath.toFile(), clazz);
     }
@@ -52,20 +52,23 @@ public abstract class BaseFileManager {
             Files.createDirectories(parentDir);
         }
 
-        // 1. 写入临时文件
+        // 写入临时文件
         Path tempFile = Files.createTempFile(parentDir, "config-", ".tmp");
         
         try {
+            log.info("写入文件" + filePath);
             objectMapper.writeValue(tempFile.toFile(), config);
-            
-            // 2. 原子移动覆盖原文件
+            // 移动覆盖
+            log.info("移动临时文件" + tempFile + "到" + filePath);
             Files.move(tempFile, filePath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+
+            log.info("写入文件" + filePath + "done");
         } catch (IOException e) {
-            // 发生异常时清理临时文件
+            log.error("写入配置文件异常: " + e.getMessage() + "尝试回退");
             try {
                 Files.deleteIfExists(tempFile);
             } catch (IOException ignored) {
-                // 忽略清理时的错误
+                log.error("清理文件" + tempFile + "异常" + ignored.getMessage());
             }
             throw e;
         }
