@@ -13,6 +13,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,22 +26,23 @@ import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @Slf4j
+@RequestMapping("/api/problems")
 public class ProblemController {
 
     @Autowired
     private ProblemService problemService;
 
-    @GetMapping("/problems")
+    @GetMapping("/")
     public Problem[] getAllProblems() {
         return problemService.getAllProblems();
     }
 
-    @GetMapping("/problem/{problemId}")
+    @GetMapping("/{problemId}")
     public Problem getProblem(@PathVariable Long problemId) {
         return problemService.getProblemById(problemId);
     } 
 
-    @PostMapping("/problem/{problemId}/create")
+    @PostMapping("/{problemId}")
     @PreAuthorize("hasRole('ADMIN')")
     public Problem createProblem(
         @PathVariable Long problemId,
@@ -52,7 +55,7 @@ public class ProblemController {
     }
 
     @SuppressWarnings("null")
-    @GetMapping("/problem/{problemId}/file/{fileName}")
+    @GetMapping("/{problemId}/file/{fileName}")
     public ResponseEntity<Resource> getProblemFile(
         @PathVariable Long problemId,
         @PathVariable String fileName) throws IOException {
@@ -66,7 +69,7 @@ public class ProblemController {
             .body(resource);
     }
 
-    @PostMapping("/problem/{problemId}/upload")
+    @PutMapping("/{problemId}")
     @PreAuthorize("hasRole('ADMIN')")
     public void uploadProblemData(
         @PathVariable Long problemId,

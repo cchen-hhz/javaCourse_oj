@@ -3,6 +3,7 @@ package com.edu.oj.controller;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.edu.oj.entity.User;
 import com.edu.oj.mapper.UserMapper;
@@ -19,6 +20,7 @@ import java.util.List;
 
 
 @RestController
+@RequestMapping("/api/users")
 public class UserController {
     @Autowired
     UserMapper userMapper;
@@ -26,7 +28,7 @@ public class UserController {
     @Autowired
     SessionRegistry sessionRegistry;
 
-    @GetMapping("/user/{userId}")
+    @GetMapping("/{userId}")
     public User getUserById(@PathVariable Long userId) {
         User existingUser = userMapper.findUserById(userId);
         if (existingUser == null) {
@@ -35,12 +37,12 @@ public class UserController {
         return existingUser;
     }
 
-    @GetMapping("/user")
+    @GetMapping("/")
     public User[] getAllUsers() {
         return userMapper.findAllUsers();
     }
 
-    @PostMapping("user/{userId}/update")
+    @PostMapping("/{userId}")
     @PreAuthorize("hasRole('ADMIN') or authentication.principal.id == #userId")
     public void updateUser(@PathVariable Long userId, @RequestBody  User user) {
         User existingUser = userMapper.findUserById(userId);
@@ -50,7 +52,7 @@ public class UserController {
         userMapper.updateUser(user);
     }
 
-    @PostMapping("user/{userId}/ban")
+    @PostMapping("/{userId}/ban")
     @PreAuthorize("hasRole('ADMIN')")
     public void banUser(@PathVariable Long userId) {
         User existingUser = userMapper.findUserById(userId);
@@ -74,7 +76,7 @@ public class UserController {
         }
     }
 
-    @PostMapping("user/{userId}/unban")
+    @PostMapping("/{userId}/unban")
     @PreAuthorize("hasRole('ADMIN')")
     public void unbanUser(@PathVariable Long userId) {
         User existingUser = userMapper.findUserById(userId);

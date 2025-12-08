@@ -125,6 +125,10 @@ public class FileSystemManager {
         if (!Files.exists(file)) {
             throw new BusinessException(CommonErrorCode.RESOURCE_NOT_FOUND, "File not found: " + relativePath);
         }
+
+        if (!Files.isRegularFile(file)) {
+            throw new BusinessException(CommonErrorCode.BAD_REQUEST, "Not a regular file: " + relativePath);
+        }
         
         return Files.newInputStream(file);
     }
