@@ -1,5 +1,6 @@
 package com.edu.oj.mapper;
 
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
@@ -29,4 +30,10 @@ public interface ProblemMapper {
             VALUES (#{id}, #{title})
             """)
     int insertProblem(Problem problem);
+
+    @Delete("""
+            DELETE FROM problems
+            WHERE id = #{problemId}
+            """)
+    int deleteProblemById(Long problemId);
 }

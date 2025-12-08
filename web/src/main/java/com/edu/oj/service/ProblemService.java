@@ -12,7 +12,6 @@ import com.edu.oj.exceptions.BusinessException;
 import com.edu.oj.exceptions.CommonErrorCode;
 import com.edu.oj.manager.FileSystemManager;
 import com.edu.oj.mapper.ProblemMapper;
-import com.edu.oj.judge.ProblemConfig;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -76,5 +75,14 @@ public class ProblemService {
         }
         
         return problem;
+    }
+
+    @Transactional
+    public void deleteProblem(Long problemId) {
+        // Ensure problem exists
+        getProblemById(problemId);
+
+        problemMapper.deleteProblemById(problemId);
+        fileSystemManager.deleteProblemData(problemId);
     }
 }

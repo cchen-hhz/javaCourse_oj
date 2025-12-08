@@ -1,5 +1,6 @@
 package com.edu.oj.mapper;
 
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
@@ -78,4 +79,10 @@ public interface UserMapper {
             WHERE id = #{id}
             """)
     void updateUser(User user);
+
+    @Delete("""
+            DELETE FROM users 
+            WHERE id = #{userId}
+            """)
+    int deleteUserById(Long userId);
 }

@@ -6,83 +6,52 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.edu.oj.entity.User;
-import com.edu.oj.mapper.UserMapper;
-import com.edu.oj.exceptions.BusinessException;
-import com.edu.oj.exceptions.CommonErrorCode;
+import com.edu.oj.service.UserService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.session.SessionRegistry;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import java.util.List;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
     @Autowired
-    UserMapper userMapper;
-
-    @Autowired
-    SessionRegistry sessionRegistry;
+    UserService userService;
 
     @GetMapping("/{userId}")
     public User getUserById(@PathVariable Long userId) {
-        User existingUser = userMapper.findUserById(userId);
-        if (existingUser == null) {
-            throw new BusinessException(CommonErrorCode.RESOURCE_NOT_FOUND, "User not found with ID: " + userId);
-        }
-        return existingUser;
+        return userService.findUserById(userId);
     }
 
     @GetMapping("/")
     public User[] getAllUsers() {
-        return userMapper.findAllUsers();
+        return userService.findAllUsers();
     }
 
     @PostMapping("/{userId}")
     @PreAuthorize("hasRole('ADMIN') or authentication.principal.id == #userId")
     public void updateUser(@PathVariable Long userId, @RequestBody  User user) {
-        User existingUser = userMapper.findUserById(userId);
-        if (existingUser == null) {
-            throw new BusinessException(CommonErrorCode.RESOURCE_NOT_FOUND, "User not found with ID: " + userId);
-        }
-        userMapper.updateUser(user);
+        userService.updateUser(userId, user);
     }
 
     @PostMapping("/{userId}/ban")
     @PreAuthorize("hasRole('ADMIN')")
     public void banUser(@PathVariable Long userId) {
-        User existingUser = userMapper.findUserById(userId);
-        if (existingUser == null) {
-            throw new BusinessException(CommonErrorCode.RESOURCE_NOT_FOUND, "User not found with ID: " + userId);
-        }
-        userMapper.banUserById(userId);
-
-        // Force logout
-        List<Object> principals = sessionRegistry.getAllPrincipals();
-        for (Object principal : principals) {
-            if (principal instanceof UserDetails) {
-                UserDetails userDetails = (UserDetails) principal;
-                if (userDetails.getUsername().equals(existingUser.getUsername())) {
-                    List<org.springframework.security.core.session.SessionInformation> sessions = sessionRegistry.getAllSessions(principal, false);
-                    for (org.springframework.security.core.session.SessionInformation session : sessions) {
-                        session.expireNow();
-                    }
-                }
-            }
-        }
+        userService.banUserById(userId);
     }
 
     @PostMapping("/{userId}/unban")
     @PreAuthorize("hasRole('ADMIN')")
     public void unbanUser(@PathVariable Long userId) {
-        User existingUser = userMapper.findUserById(userId);
-        if (existingUser == null) {
-            throw new BusinessException(CommonErrorCode.RESOURCE_NOT_FOUND, "User not found with ID: " + userId);
-        }
-        userMapper.unbanUserById(userId);
+        userService.unbanUserById(userId);
+    }
+
+    @DeleteMapping("/{userId}")
+    @PreAuthorize("hasRole('ADMIN') or authentication.pricipal.id == #userId")
+    public void deleteUser(@PathVariable Long userId) {
+        userService.deleteUserById(userId);
     }
 }

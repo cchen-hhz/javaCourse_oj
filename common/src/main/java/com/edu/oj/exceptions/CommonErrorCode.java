@@ -18,7 +18,8 @@ public enum CommonErrorCode implements ErrorCode {
     DATA_CONFLICT(409, "Data Conflict"),
     FORBIDDEN(403, "Forbidden"),
     FILE_OPERATION_ERROR(500, "File Operation Error"),  
-    BAD_REQUEST(400, "Bad Request");
+    BAD_REQUEST(400, "Bad Request"),
+    METHOD_NOT_ALLOWED(405, "Method Not Allowed");
 
     private final int status;
     private final String message;
