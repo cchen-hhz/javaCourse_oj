@@ -105,7 +105,7 @@ public class FileSystemManager {
         if (!Files.exists(dir)) {
             Files.createDirectories(dir);
         }
-        //TODO: 默认 cpp
+        //TODO: 目前默认 cpp，未来需要拓展
         Path file = dir.resolve("code.cpp");
         Files.writeString(file, code);
         log.info("Submission code saved for submissionId: {}", submissionId);
@@ -116,7 +116,7 @@ public class FileSystemManager {
      * @param problemId 题目ID
      * @param relativePath 相对路径
      * @return 文件输入流
-     * @throws IOException
+     * @throws IOException IO异常   
      */
     public InputStream getProblemFileStream(Long problemId, String relativePath) throws IOException {
         Path root = problemFileManager.getProblemPath(problemId);
