@@ -15,7 +15,7 @@ import com.edu.oj.dto.RegisterDto;
 import com.edu.oj.response.LoginRegisterResponse;
 
 @RestController
-@RequestMapping("/api/user/")
+@RequestMapping("/api/log/")
 public class LogController {
     @Autowired
     LoginService loginService;
