@@ -85,17 +85,26 @@ public class CodeExecutor {
     /**
      * 遍历 testCases 目录下所有 *.in，和同名 *.out 对比
      */
-    private List<TestCaseResult> runAllTestCases(CodeFileInfo codeFileInfo, Path testCaseDir, ProblemConfig.Limits limits,Path executablePath) throws IOException {
+    private List<TestCaseResult> runAllTestCases(CodeFileInfo codeFileInfo, Path testCaseDir, ProblemConfig.Limits limits, Path executablePath) throws IOException {
+
+        // 1. 收集所有测试点 in/out 文件
         List<Path> inFiles = new ArrayList<>();
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(testCaseDir, "*.in")) {
             for (Path inFile : stream) {
                 inFiles.add(inFile);
             }
         }
-
         inFiles.sort(Comparator.comparing(p -> p.getFileName().toString()));
 
-        List<TestCaseResult> results = new ArrayList<>();
+        // 这里假设 submissionDir 是 codeFileInfo.getCodePath().getParent()
+        // 如果你的结构不同，请替换为真实的 submission 目录
+        Path submissionDir = codeFileInfo.getCodePath().getParent();
+        System.out.println("submissionDir:"+submissionDir.toString());
+        Path metaFile    = submissionDir.resolve("cases.yaml");
+        Path resultsFile = submissionDir.resolve("results.yaml");
+
+        // 2. 生成 cases.yaml（你也可以用 JSON，看你喜欢）
+        List<TestCaseMeta> metas = new ArrayList<>();
         int index = 1;
         for (Path inFile : inFiles) {
             String fileName = inFile.getFileName().toString(); // "1.in"
@@ -103,17 +112,119 @@ public class CodeExecutor {
             int caseId = Integer.parseInt(idStr);
             Path outFile = testCaseDir.resolve(idStr + ".out");
 
-            if (!Files.exists(outFile)) {
-                results.add(TestCaseResult.missingOutputFile(index, inFile, outFile));
-                index++;
-                continue;
-            }
-
-            TestCaseResult r = runSingleTestCase(index, caseId, codeFileInfo, inFile, outFile, limits, executablePath);
-            results.add(r);
+            TestCaseMeta meta = new TestCaseMeta();
+            meta.setIndex(index);
+            meta.setCaseId(caseId);
+            meta.setInputFile(inFile.getFileName().toString());
+            meta.setOutputFile(outFile.getFileName().toString());
+            metas.add(meta);
             index++;
         }
-        return results;
+
+        SubmissionRunMeta submissionRunMeta = new SubmissionRunMeta();
+        submissionRunMeta.setLanguage(codeFileInfo.getLanguage());
+        submissionRunMeta.setTimeLimitMs(limits.getTimeLimitMs());
+        submissionRunMeta.setMemoryLimitMb(limits.getMemoryLimitMb());
+        submissionRunMeta.setExecutableName(executablePath != null ? executablePath.getFileName().toString() : null);
+        submissionRunMeta.setTestCases(metas);
+
+        YAMLMapper mapper = new YAMLMapper();
+        Files.writeString(metaFile, mapper.writeValueAsString(submissionRunMeta), StandardCharsets.UTF_8);
+
+        // 3. 构造一次性的 RunRequest（submission 模式）
+        RunRequest request = new RunRequest();
+        request.setLanguage(codeFileInfo.getLanguage());
+        request.setTimeLimitMs(limits.getTimeLimitMs());
+        request.setMemoryLimitMb(limits.getMemoryLimitMb());
+        request.setExecutablePath(executablePath);
+        request.setTestCasesDir(testCaseDir);
+        request.setMetaFilePath(metaFile);
+        request.setResultsFilePath(resultsFile);
+
+        RunResult runResult;
+        try {
+            runResult = codeRunner.runInSandbox(request);
+        } catch (Exception e) {
+            // 整体运行失败，所有测试点标 RE
+            List<TestCaseResult> errorResults = new ArrayList<>();
+            int idx = 1;
+            for (Path inFile : inFiles) {
+                String fileName = inFile.getFileName().toString();
+                String idStr = fileName.substring(0, fileName.length() - 3);
+                Path outFile = testCaseDir.resolve(idStr + ".out");
+                errorResults.add(new TestCaseResult(idx, TestCaseStatus.RE,
+                        "Exception in submission run: " + e.getMessage(),
+                        inFile, outFile, null, null));
+                idx++;
+            }
+            return errorResults;
+        }
+
+        // 如果容器整体失败，按原有逻辑处理
+        if (!runResult.isSuccess()) {
+            List<TestCaseResult> errorResults = new ArrayList<>();
+            int idx = 1;
+            for (Path inFile : inFiles) {
+                String fileName = inFile.getFileName().toString();
+                String idStr = fileName.substring(0, fileName.length() - 3);
+                Path outFile = testCaseDir.resolve(idStr + ".out");
+                errorResults.add(new TestCaseResult(idx, TestCaseStatus.RE,
+                        "Submission run failed: " + runResult.getMessage(),
+                        inFile, outFile, runResult.getStdout(), null));
+                idx++;
+            }
+            return errorResults;
+        }
+
+        // 4. 从 results.yaml 解析每个测试点结果
+        if (!Files.exists(resultsFile)) {
+            // 万一容器没写结果文件，全部 RE
+            List<TestCaseResult> errorResults = new ArrayList<>();
+            int idx = 1;
+            for (Path inFile : inFiles) {
+                String fileName = inFile.getFileName().toString();
+                String idStr = fileName.substring(0, fileName.length() - 3);
+                Path outFile = testCaseDir.resolve(idStr + ".out");
+                errorResults.add(new TestCaseResult(idx, TestCaseStatus.RE,
+                        "Missing results.yaml from container",
+                        inFile, outFile, null, null));
+                idx++;
+            }
+            return errorResults;
+        }
+
+        String yamlContent = Files.readString(resultsFile, StandardCharsets.UTF_8);
+        SubmissionRunResult submissionRunResult = mapper.readValue(yamlContent, SubmissionRunResult.class);
+
+        // 映射回 TestCaseResult 列表（保证 index / inFile / outFile 与原来一致）
+        List<TestCaseResult> finalResults = new ArrayList<>();
+        for (TestCaseMeta meta : metas) {
+            SingleCaseResultDto dto = submissionRunResult.findByCaseId(meta.getCaseId());
+            Path inFile = testCaseDir.resolve(meta.getInputFile());
+            Path outFile = testCaseDir.resolve(meta.getOutputFile());
+
+            if (dto == null) {
+                finalResults.add(new TestCaseResult(
+                        meta.getIndex(),
+                        TestCaseStatus.RE,
+                        "No result from container for caseId=" + meta.getCaseId(),
+                        inFile, outFile, null, null
+                ));
+            } else {
+                TestCaseStatus status = dto.getStatus();   // AC/WA/RE/TLE
+                String msg = dto.getMessage();
+                String actual = dto.getActualOutput();
+                String expected = Files.exists(outFile)
+                        ? Files.readString(outFile, StandardCharsets.UTF_8)
+                        : null;
+
+                finalResults.add(new TestCaseResult(
+                        meta.getIndex(), status, msg, inFile, outFile, actual, expected
+                ));
+            }
+        }
+
+        return finalResults;
     }
 
     /**
@@ -154,8 +265,7 @@ public class CodeExecutor {
             }
 
             String actualOutput = runResult.getStdout();
-            boolean accepted = normalizeOutput(actualOutput)
-                    .equals(normalizeOutput(expectedOutput));
+            boolean accepted = normalizeOutput(actualOutput).equals(normalizeOutput(expectedOutput));
 
             String msg;
             if (accepted) {
@@ -164,15 +274,7 @@ public class CodeExecutor {
                 msg = (timeInfo != null) ? ("Wrong Answer (" + timeInfo + ")") : "Wrong Answer";
             }
 
-            return new TestCaseResult(
-                    index,
-                    accepted ? TestCaseStatus.AC : TestCaseStatus.WA,
-                    msg,
-                    inFile,
-                    outFile,
-                    actualOutput,
-                    expectedOutput
-            );
+            return new TestCaseResult(index, accepted ? TestCaseStatus.AC : TestCaseStatus.WA, msg, inFile, outFile, actualOutput, expectedOutput);
         } catch (Exception e) {
             return new TestCaseResult(index, TestCaseStatus.RE, "Exception: " + e.getMessage(), inFile, outFile, null, null);
         }

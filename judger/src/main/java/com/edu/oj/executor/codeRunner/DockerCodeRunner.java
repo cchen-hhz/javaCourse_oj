@@ -137,6 +137,20 @@ public class DockerCodeRunner implements CodeRunner {
         return RunResult.success(stdout);
     }
 
+
+    private static void checkDockerVersion() {
+        try {
+            Process p = new ProcessBuilder("docker", "--version")
+                    .redirectErrorStream(true)
+                    .start();
+            ByteArrayOutputStream buf = new ByteArrayOutputStream();
+            collectIO(p, buf, new ByteArrayOutputStream());
+            int code = p.waitFor();
+            System.out.println("docker --version exit=" + code + ", output=" + buf);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
     /**
      * 运行：只算运行时间，不再包含编译时间。
      *
@@ -149,108 +163,136 @@ public class DockerCodeRunner implements CodeRunner {
     @Override
     public RunResult runInSandbox(RunRequest request) throws IOException, InterruptedException {
         if (request.getLanguage() != Language.C && request.getLanguage() != Language.CPP) {
-            return RunResult.fail("Run not implemented for language: " + request.getLanguage(), null);
+            return RunResult.fail("Submission run not implemented for language: " + request.getLanguage(), null);
         }
 
-        Path exePath   = request.getExecutablePath();
-        Path inputPath = request.getInputPath();
-
-        if (exePath == null) {
-            return RunResult.fail("Run failed: executablePath is null", null);
+        // 调试：确认 docker 在 Java 里可用
+        try {
+            Process p = new ProcessBuilder("docker", "--version")
+                    .redirectErrorStream(true)
+                    .start();
+            ByteArrayOutputStream buf = new ByteArrayOutputStream();
+            try (InputStream is = p.getInputStream()) {
+                is.transferTo(buf);
+            }
+            int code = p.waitFor();
+            System.out.println("docker --version exit=" + code + ", output=" + buf);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        if (inputPath == null) {
-            return RunResult.fail("Run failed: inputPath is null", null);
+
+        Path exePath      = request.getExecutablePath();
+        Path testCasesDir = request.getTestCasesDir();
+        Path metaFile     = request.getMetaFilePath();
+        Path resultsFile  = request.getResultsFilePath();
+
+        if (exePath == null || testCasesDir == null || metaFile == null || resultsFile == null) {
+            return RunResult.fail("Submission run failed: missing paths in RunRequest", null);
         }
 
-        Path buildDir = exePath.getParent();       // data/submission/{sid}/build
-        Path inputDir = inputPath.getParent();     // data/problem/{pid}/testCases
+        Path buildDir      = exePath.getParent();      // data/submission/{sid}/build
+        Path submissionDir = buildDir.getParent();     // data/submission/{sid}
+        Files.createDirectories(buildDir);
+        Files.createDirectories(submissionDir);
 
         long timeLimitMs   = (request.getTimeLimitMs()   != null) ? request.getTimeLimitMs()   : 1000L;
         long memoryLimitMb = (request.getMemoryLimitMb() != null) ? request.getMemoryLimitMb() : 256L;
 
-        String containerName = "run-" + UUID.randomUUID();
+        String containerName = "run-sub-" + UUID.randomUUID();
 
         List<String> cmd = new ArrayList<>();
         cmd.add(DOCKER); cmd.add("run");
         cmd.add("--rm");
         cmd.add("--name"); cmd.add(containerName);
 
-        // 强制使用 run-exec.sh 作为入口
-        cmd.add("--entrypoint"); cmd.add("/app/run-exec.sh");
+        cmd.add("--entrypoint"); cmd.add("/app/run-submission.sh");
 
-        // 内存限制
-        cmd.add("--memory");      cmd.add(memoryLimitMb + "m");
-        cmd.add("--memory-swap"); cmd.add(memoryLimitMb + "m");
+        // 为避免 Docker Desktop/Windows 对 --memory-swap 限制的问题，先只保留 --memory
+        cmd.add("--memory"); cmd.add(memoryLimitMb + "m");
+        // cmd.add("--memory-swap"); cmd.add(memoryLimitMb + "m");
 
-        // 挂载 build 目录到 /app/build（只读，包含 main）
         cmd.add("-v");
         cmd.add(buildDir.toAbsolutePath().toString() + ":/app/build:ro");
 
-        // 挂载 testCases 目录到 /app/input（只读）
         cmd.add("-v");
-        cmd.add(inputDir.toAbsolutePath().toString() + ":/app/input:ro");
+        cmd.add(testCasesDir.toAbsolutePath().toString() + ":/app/input:ro");
 
-        // 镜像
+        cmd.add("-v");
+        cmd.add(submissionDir.toAbsolutePath().toString() + ":/app/submission");
+
         cmd.add(CPP_RUN_IMAGE);
 
-        // 入口参数：可执行文件路径 + 输入文件路径（容器内）
-        cmd.add("/app/build/main");
-        cmd.add("/app/input/" + inputPath.getFileName().toString());
+        cmd.add("/app/build/" + exePath.getFileName().toString());
+        cmd.add("/app/submission/" + metaFile.getFileName().toString());
+        cmd.add("/app/submission/" + resultsFile.getFileName().toString());
+
+        System.out.println("buildDir=" + buildDir.toAbsolutePath());
+        System.out.println("testCasesDir=" + testCasesDir.toAbsolutePath());
+        System.out.println("submissionDir=" + submissionDir.toAbsolutePath());
 
         ProcessBuilder pb = new ProcessBuilder(cmd);
         pb.directory(buildDir.toFile());
 
         Process process = pb.start();
+
         ByteArrayOutputStream stdoutBuf = new ByteArrayOutputStream();
         ByteArrayOutputStream stderrBuf = new ByteArrayOutputStream();
-        Thread ioThread = collectIO(process, stdoutBuf, stderrBuf);
+
+        Thread tOut = new Thread(() -> {
+            try (InputStream is = process.getInputStream()) {
+                is.transferTo(stdoutBuf);
+            } catch (IOException ignored) {}
+        });
+        Thread tErr = new Thread(() -> {
+            try (InputStream is = process.getErrorStream()) {
+                is.transferTo(stderrBuf);
+            } catch (IOException ignored) {}
+        });
+
+        tOut.start();
+        tErr.start();
 
         long start = System.currentTimeMillis();
-        boolean finished = process.waitFor(timeLimitMs+4000, TimeUnit.MILLISECONDS);
+        boolean finished = process.waitFor(timeLimitMs + 4000, TimeUnit.MILLISECONDS);
         long used = System.currentTimeMillis() - start;
-        System.out.println("Docker run used " + used + " ms, finished=" + finished);
+        System.out.println("Docker submission run used " + used + " ms, finished=" + finished);
+
+        tOut.join();
+        tErr.join();
 
         if (!finished) {
             killContainer(containerName);
             process.destroyForcibly();
-            try { ioThread.join(200); } catch (InterruptedException ignored) {}
-            // 这是“整体 docker 超时”（包括容器启动在内）
-            return RunResult.fail("Time Limit Exceeded (docker)", stdoutBuf.toString());
+            return RunResult.fail("Time Limit Exceeded (docker submission)", stdoutBuf.toString());
         }
-
-        try { ioThread.join(200); } catch (InterruptedException ignored) {}
 
         int exit = process.exitValue();
+        Path ResultsFile  = request.getResultsFilePath();
+        System.out.println("local results path = " + ResultsFile.toAbsolutePath());
+        System.out.println("exists = " + Files.exists(ResultsFile));
+        if (Files.exists(ResultsFile)) {
+            System.out.println("results.yaml content:");
+            System.out.println(Files.readString(ResultsFile));
+        }
         String stdout = stdoutBuf.toString();
         String stderr = stderrBuf.toString();
-// 1) 从 stderr 里解析容器内部测得的执行时间
-        Long execTimeMs = parseExecTime(stderr);  // 新增的辅助方法，见下方
-// 2) 如果程序执行时间超过题目 timeLimitMs，就直接判 TLE
-        Long limitMs = request.getTimeLimitMs();
-        if (execTimeMs != null && limitMs != null && execTimeMs > limitMs) {
-            // 可以把原 stderr 一并返回，方便调试
-            RunResult tle = RunResult.fail("Time Limit Exceeded (exec " + execTimeMs + " ms > " + limitMs + " ms)", stderr);
-            return tle;
-        }
-// 3) 再按原来的逻辑处理 exit code
+
+        System.out.println("==== submission docker cmd ====");
+        System.out.println(String.join(" ", cmd));
+        System.out.println("==== submission docker stdout ====");
+        System.out.println(stdout);
+        System.out.println("==== submission docker stderr ====");
+        System.out.println(stderr);
+
         if (exit != 0) {
-            RunResult r = RunResult.fail("Runtime Error (exit " + exit + ")", stderr);
-            if (execTimeMs != null) {
-                r.setMessage("Execution time: " + execTimeMs + " ms; " + r.getMessage());
-            }
-            return r;
+            System.out.println("containerName = " + containerName);
+            return RunResult.fail("Submission Runtime Error (exit " + exit + ")", stderr);
         }
 
         RunResult ok = RunResult.success(stdout);
-        if (execTimeMs != null) {
-            ok.setMessage("Execution time: " + execTimeMs + " ms");
-        }
+        ok.setMessage("Submission run finished");
+        System.out.println("containerName = " + containerName);
         return ok;
     }
-
-    // ========== 工具方法 ==========
-
-
-
 
 }

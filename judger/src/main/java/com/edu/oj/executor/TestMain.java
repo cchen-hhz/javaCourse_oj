@@ -6,17 +6,28 @@ import com.edu.oj.executor.domain.JudgeResult;
 
 public class TestMain {
     public static void main(String[] args) {
-        long submissionId = 1L;
-        long problemId = 1L;
+//        if (args.length != 2) {
+//            System.err.println("Usage: java -jar judger.jar <submissionId> <problemId>");
+//            System.exit(1);
+//        }
+        long submissionId = 1;
+        long problemId    = 1;
 
         CodeRunner runner = new DockerCodeRunner();
         CodeExecutor executor = new CodeExecutor(runner);
 
         JudgeResult result = executor.judge(submissionId, problemId);
-
-        System.out.println("Judge success = " + result.isSuccess());
-        System.out.println("All AC = " + result.isAllAccepted());
-        System.out.println("Message = " + result.getMessage());
-        result.getCaseResults().forEach(System.out::println);
+        System.out.println("allAccepted = " + result.isAllAccepted());
+        if (result.getCaseResults() != null) {
+            result.getCaseResults().forEach(tc -> {
+                System.out.println(
+                        "#" + tc.getIndex() + " " +
+                                tc.getStatus() + " - " +
+                                tc.getMessage()
+                );
+            });
+        } else {
+            System.out.println("No test case results, maybe error: " + result.getMessage());
+        }
     }
 }
