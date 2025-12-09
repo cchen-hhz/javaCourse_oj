@@ -12,6 +12,14 @@ spring:
   servlet:
     multipart:
       max-file-size: 50MB
+  
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.JsonSerializer
+      properties:
+        "[spring.json.add.type.headers]": true
 
 mybatis:
   configuration:

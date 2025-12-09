@@ -167,4 +167,8 @@ public class FileSystemManager {
             log.error("Failed to delete problem data for problemId: " + problemId, e);
         }
     }
+
+    public void saveSubmissionConfig(Long submissionId, com.edu.oj.entity.SubmissionConfig config) throws IOException {
+        submissionFileManager.saveSubmissionConfig(submissionId, config);
+    }
 }
