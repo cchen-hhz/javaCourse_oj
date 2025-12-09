@@ -1,6 +1,5 @@
 package com.edu.oj.manager;
 
-import com.edu.oj.entity.Submission;
 import com.edu.oj.entity.SubmissionConfig;
 import com.edu.oj.exceptions.BusinessException;
 import com.edu.oj.exceptions.CommonErrorCode;
