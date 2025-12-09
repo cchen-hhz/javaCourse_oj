@@ -143,4 +143,14 @@ public class JudgeService {
             return fileManager.getSubmissionConfig(submissionId);
         }
     }
+
+    public String getSubmissionCode(Long submissionId) throws IOException {
+        try (java.io.InputStream inputStream = fileManager.getSubmissionFileStream(submissionId, "code.cpp")) {
+            return new String(inputStream.readAllBytes());
+        }
+    }
+
+    public Submission getSubmissionById(Long submissionId) {
+        return submissionMapper.findSubmissionById(submissionId);
+    }
 }
