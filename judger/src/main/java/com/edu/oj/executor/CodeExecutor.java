@@ -15,6 +15,8 @@ import static com.edu.oj.executor.domain.ProblemConfig.loadProblemConfig;
 import static com.edu.oj.executor.util.CompileOnce.compileOnce;
 import static com.edu.oj.executor.util.NormalizeOutput.normalizeOutput;
 
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
+
 /**
  * 负责：
  * 1. 根据 submissionId 找到用户代码文件（code.py / code.java / code.c / code.cpp）
@@ -225,6 +227,7 @@ public class CodeExecutor {
     /**
      * 对单个测试点进行评测
      */
+    @Deprecated
     private TestCaseResult runSingleTestCase(int index, int caseId, CodeFileInfo codeFileInfo, Path inFile, Path outFile, ProblemConfig.Limits limits, Path executablePath) {
         try {
             // 期望输出

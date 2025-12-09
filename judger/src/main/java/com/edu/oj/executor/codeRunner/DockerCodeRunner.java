@@ -15,7 +15,8 @@ import java.util.concurrent.TimeUnit;
 
 import static com.edu.oj.executor.util.CollectIO.collectIO;
 import static com.edu.oj.executor.util.KillContainer.killContainer;
-import static com.edu.oj.executor.util.parseExecTime.parseExecTime;
+
+import java.io.InputStream;
 
 /**
  * 使用 Docker 在沙箱中编译和运行代码。
