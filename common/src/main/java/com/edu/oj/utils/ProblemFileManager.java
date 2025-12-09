@@ -1,60 +1,61 @@
 package com.edu.oj.utils;
 
 import org.springframework.stereotype.Component;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.edu.oj.exceptions.BusinessException;
 
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.nio.file.Path;
+
 import com.edu.oj.judge.ProblemConfig;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
-
-/**
- * 用于题目文件的存储，加载管理 
- */
 @Component
 @Slf4j
-public class ProblemFileManager {
+public class ProblemFileManager extends BaseFileManager {
     @Value("${data.problem-file-path}")
     private String problemFilePath;
 
-    @PostConstruct
-    public void init() {
-        log.info("Problem file path: " + problemFilePath);
+    public ProblemFileManager(@Qualifier("yamlMapper") ObjectMapper yamlMapper) {
+        super(yamlMapper);
     }
 
-    @Autowired
-    ObjectMapper yamlMapper;
+    @PostConstruct
+    public void init() {
+        if(problemFilePath == null || problemFilePath.isEmpty()) {
+            throw new BusinessException("Problem file path is not configured");
+        }
+        log.info("Problem file path: " + problemFilePath);
+    }
+    
+    private Path getProblemConfigPath(Long problemId) {
+        Path path = Path.of(problemFilePath, problemId.toString());
+        return path.resolve("config.yml");
+    }
 
-    private Path getProblemPath(Long problemId) {
+    /**
+     * 获取题目根目录路径
+     * @param problemId 题目ID
+     * @return 路径
+     */
+    public Path getProblemPath(Long problemId) {
         return Path.of(problemFilePath, problemId.toString());
     }
 
-    private Path getProblemConfigPath(Long problemId) {
-        return getProblemPath(problemId).resolve("config.yml");
-    }
-
-    public ProblemConfig getProblemConfig(Long problemId) throws Exception {
+    /**
+     * 获取题目配置
+     * @param problemId 题目ID
+     * @return 题目配置
+     * @throws BusinessException 题目不存在时抛出
+     * @throws IOException 读取文件失败时抛出
+     */
+    public ProblemConfig getProblemConfig(Long problemId) throws IOException {
         Path configPath = getProblemConfigPath(problemId);
-        if(!configPath.toFile().exists()) {
-            throw new ResponseStatusException(
-                HttpStatus.NOT_FOUND,
-                "Problem not found: " + problemId 
-            );
-        }
-        return yamlMapper.readValue(configPath.toFile(), ProblemConfig.class);
+        return readConfig(configPath, ProblemConfig.class, "ProblemConfig", problemId);
     }   
-
-    public int writeProblemConfig(Long problemId, ProblemConfig config) throws IOException {
-        Path configPath = getProblemConfigPath(problemId);
-        yamlMapper.writeValue(configPath.toFile(), config);
-        return 0;
-    }
 }

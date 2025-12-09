@@ -1,5 +1,5 @@
 id: 0
-title: Hello World
+title: Hello world
 number_count: 10
-time_limit: 10
+time_limit: 1000
 memory_limit: 65536

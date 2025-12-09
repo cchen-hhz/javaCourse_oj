@@ -1,5 +1,6 @@
 package com.edu.oj.mapper;
 
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
@@ -21,6 +22,12 @@ public interface UserMapper {
 
     @Select("""
             SELECT * 
+            FROM users
+            """)
+    User[] findAllUsers();
+
+    @Select("""
+            SELECT * 
             FROM users 
             WHERE id = #{userId}
             """)
@@ -33,14 +40,12 @@ public interface UserMapper {
             """)
     User findUserByUsername(String username);
 
-
     @Insert("""
             INSERT INTO users (username, password, description, role, created_at, enabled) 
             VALUES (#{username}, #{password}, #{description}, #{role}, #{createdAt}, #{enabled})
             """)
     int insertUser(User user);
 
-    
     @Update("""
             UPDATE users 
             SET role = #{role} 
@@ -50,15 +55,34 @@ public interface UserMapper {
 
     @Update("""
             UPDATE users 
-            SET password = #{newPassword} 
+            SET enabled = FALSE 
             WHERE id = #{userId}
             """)
-    void updateUserPasswordById(Long userId, String newPassword);
+
+    void banUserById(Long userId);
 
     @Update("""
             UPDATE users 
-            SET description = #{newDescription} 
+            SET enabled = TRUE 
             WHERE id = #{userId}
             """)
-    void updateUserDescriptionById(Long userId, String newDescription);
+    void unbanUserById(Long userId);
+
+    @Update("""
+            UPDATE users 
+            SET username = #{username},
+                password = #{password},
+                description = #{description},
+                role = #{role},
+                created_at = #{createdAt},
+                enabled = #{enabled}
+            WHERE id = #{id}
+            """)
+    void updateUser(User user);
+
+    @Delete("""
+            DELETE FROM users 
+            WHERE id = #{userId}
+            """)
+    int deleteUserById(Long userId);
 }

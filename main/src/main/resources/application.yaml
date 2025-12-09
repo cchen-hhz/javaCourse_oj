@@ -9,6 +9,17 @@ spring:
     username: oj_admin
     password: oj_token
     driver-class-name: com.mysql.cj.jdbc.Driver
+  servlet:
+    multipart:
+      max-file-size: 50MB
+  
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.JsonSerializer
+      properties:
+        "[spring.json.add.type.headers]": true
 
 mybatis:
   configuration:
@@ -18,6 +29,11 @@ mybatis:
 logging:
   level:
     web: DEBUG
+
+server:
+  servlet:
+    session:
+      timeout: 60m
 
 data:
   problem-file-path: /home/cchen/javalearn/oj/data/problems
