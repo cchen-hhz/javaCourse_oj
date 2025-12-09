@@ -136,19 +136,6 @@ public class DockerCodeRunner implements CodeRunner {
     }
 
 
-    private static void checkDockerVersion() {
-        try {
-            Process p = new ProcessBuilder("docker", "--version")
-                    .redirectErrorStream(true)
-                    .start();
-            ByteArrayOutputStream buf = new ByteArrayOutputStream();
-            collectIO(p, buf, new ByteArrayOutputStream());
-            int code = p.waitFor();
-            System.out.println("docker --version exit=" + code + ", output=" + buf);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
     /**
      * 运行：只算运行时间，不再包含编译时间。
      *
