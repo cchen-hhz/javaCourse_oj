@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 import java.nio.file.Path;
 import java.io.IOException;
 
-import com.edu.oj.judge.SubmissionConfig;
+import com.edu.oj.entity.SubmissionConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.annotation.PostConstruct;
@@ -49,5 +49,10 @@ public class SubmissionFileManager extends BaseFileManager {
     public SubmissionConfig getSubmissionConfig(Long submissionId) throws IOException {
         Path resultPath = getSubmissionResultPath(submissionId);
         return readConfig(resultPath, SubmissionConfig.class, "Submission", submissionId);
+    }
+
+    public void saveSubmissionConfig(Long submissionId, SubmissionConfig config) throws IOException {
+        Path resultPath = getSubmissionResultPath(submissionId);
+        writeConfig(resultPath, config);
     }
 }
