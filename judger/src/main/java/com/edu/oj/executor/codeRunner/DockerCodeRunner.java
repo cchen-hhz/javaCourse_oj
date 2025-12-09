@@ -183,7 +183,7 @@ public class DockerCodeRunner implements CodeRunner {
         Path testCasesDir = request.getTestCasesDir();
         Path metaFile     = request.getMetaFilePath();
         Path resultsFile  = request.getResultsFilePath();
-
+        System.out.println("check testCasesDir:"+testCasesDir.toString());
         if (exePath == null || testCasesDir == null || metaFile == null || resultsFile == null) {
             return RunResult.fail("Submission run failed: missing paths in RunRequest", null);
         }

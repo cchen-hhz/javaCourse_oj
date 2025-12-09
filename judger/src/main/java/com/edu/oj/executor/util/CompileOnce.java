@@ -29,7 +29,7 @@ public class CompileOnce {
 
             RunResult rr = codeRunner.compile(req); // 新增一个 compile(...) 方法
 
-            System.out.println("checkout:"+rr.toString());
+            System.out.println("???checkout:"+rr.toString());
 
             if (!rr.isSuccess()) {
                 return new CompileResult(false, rr.getMessage(), null);

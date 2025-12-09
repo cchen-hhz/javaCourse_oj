@@ -220,64 +220,84 @@ public class CodeExecutor {
                 String expected = Files.exists(outFile)
                         ? Files.readString(outFile, StandardCharsets.UTF_8)
                         : null;
+                Long execMs = dto.getExecTimeMs();
+                Integer memKb  = dto.getMemoryKb();
+
+                StringBuilder extra = new StringBuilder();
+                if (execMs != null) {
+                    extra.append("time: ").append(execMs).append(" ms");
+                }
+                if (memKb != null) {
+                    if (extra.length() > 0) extra.append(", ");
+                    extra.append("memory: ").append(memKb).append(" KB");
+                }
+
+                if (extra.length() > 0) {
+                    if (msg == null || msg.isEmpty()) {
+                        msg = extra.toString();
+                    } else {
+                        msg = msg + " (" + extra + ")";
+                    }
+                }
 
                 finalResults.add(new TestCaseResult(
                         meta.getIndex(), status, msg, inFile, outFile, actual, expected
                 ));
+
             }
         }
 
         return finalResults;
     }
-    @Deprecated
-    private TestCaseResult runSingleTestCase(int index, int caseId, CodeFileInfo codeFileInfo, Path inFile, Path outFile, ProblemConfig.Limits limits, Path executablePath) {
-        try {
-            // 期望输出
-            String expectedOutput = Files.readString(outFile, StandardCharsets.UTF_8);
-
-            // 组装 RunRequest
-            RunRequest request = new RunRequest();
-            request.setLanguage(codeFileInfo.getLanguage());
-            request.setInputPath(inFile);
-            request.setTimeLimitMs(limits.getTimeLimitMs());
-            request.setMemoryLimitMb(limits.getMemoryLimitMb());
-            request.setCaseId(caseId);
-            Language lang = codeFileInfo.getLanguage();
-            if (lang == Language.PYTHON) {
-                request.setCodePath(codeFileInfo.getCodePath());
-            } else {
-                request.setExecutablePath(executablePath);
-            }
-
-            // 真正执行
-            RunResult runResult = codeRunner.runInSandbox(request);
-
-            String timeInfo = runResult.getMessage(); // 可能是 "Execution time: X ms" 或 null
-            System.out.println(timeInfo);
-            if (!runResult.isSuccess()) {
-                String msg = "Runtime Error";
-                if (timeInfo != null) {
-                    msg += " (" + timeInfo + ")";
-                } else if (runResult.getMessage() != null) {
-                    msg += ": " + runResult.getMessage();
-                }
-                return new TestCaseResult(index, TestCaseStatus.RE, msg, inFile, outFile, runResult.getStdout(), expectedOutput);
-            }
-
-            String actualOutput = runResult.getStdout();
-            boolean accepted = normalizeOutput(actualOutput).equals(normalizeOutput(expectedOutput));
-
-            String msg;
-            if (accepted) {
-                msg = (timeInfo != null) ? ("Accepted (" + timeInfo + ")") : "Accepted";
-            } else {
-                msg = (timeInfo != null) ? ("Wrong Answer (" + timeInfo + ")") : "Wrong Answer";
-            }
-
-            return new TestCaseResult(index, accepted ? TestCaseStatus.AC : TestCaseStatus.WA, msg, inFile, outFile, actualOutput, expectedOutput);
-        } catch (Exception e) {
-            return new TestCaseResult(index, TestCaseStatus.RE, "Exception: " + e.getMessage(), inFile, outFile, null, null);
-        }
-    }
+//    @Deprecated
+//    private TestCaseResult runSingleTestCase(int index, int caseId, CodeFileInfo codeFileInfo, Path inFile, Path outFile, ProblemConfig.Limits limits, Path executablePath) {
+//        try {
+//            // 期望输出
+//            String expectedOutput = Files.readString(outFile, StandardCharsets.UTF_8);
+//
+//            // 组装 RunRequest
+//            RunRequest request = new RunRequest();
+//            request.setLanguage(codeFileInfo.getLanguage());
+//            request.setInputPath(inFile);
+//            request.setTimeLimitMs(limits.getTimeLimitMs());
+//            request.setMemoryLimitMb(limits.getMemoryLimitMb());
+//            request.setCaseId(caseId);
+//            Language lang = codeFileInfo.getLanguage();
+//            if (lang == Language.PYTHON) {
+//                request.setCodePath(codeFileInfo.getCodePath());
+//            } else {
+//                request.setExecutablePath(executablePath);
+//            }
+//
+//            // 真正执行
+//            RunResult runResult = codeRunner.runInSandbox(request);
+//
+//            String timeInfo = runResult.getMessage(); // 可能是 "Execution time: X ms" 或 null
+//            System.out.println(timeInfo);
+//            if (!runResult.isSuccess()) {
+//                String msg = "Runtime Error";
+//                if (timeInfo != null) {
+//                    msg += " (" + timeInfo + ")";
+//                } else if (runResult.getMessage() != null) {
+//                    msg += ": " + runResult.getMessage();
+//                }
+//                return new TestCaseResult(index, TestCaseStatus.RE, msg, inFile, outFile, runResult.getStdout(), expectedOutput);
+//            }
+//
+//            String actualOutput = runResult.getStdout();
+//            boolean accepted = normalizeOutput(actualOutput).equals(normalizeOutput(expectedOutput));
+//
+//            String msg;
+//            if (accepted) {
+//                msg = (timeInfo != null) ? ("Accepted (" + timeInfo + ")") : "Accepted";
+//            } else {
+//                msg = (timeInfo != null) ? ("Wrong Answer (" + timeInfo + ")") : "Wrong Answer";
+//            }
+//
+//            return new TestCaseResult(index, accepted ? TestCaseStatus.AC : TestCaseStatus.WA, msg, inFile, outFile, actualOutput, expectedOutput);
+//        } catch (Exception e) {
+//            return new TestCaseResult(index, TestCaseStatus.RE, "Exception: " + e.getMessage(), inFile, outFile, null, null);
+//        }
+//    }
 
 }

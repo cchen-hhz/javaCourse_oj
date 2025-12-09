@@ -226,10 +226,10 @@ echo "$CASE_LINES" | while IFS='|' read -r INDEX CASE_ID IN_FILE OUT_FILE; do
         else
           if diff -ZB "$EXPECTED_PATH" "$ACTUAL_PATH" >/dev/null 2>&1; then
             STATUS="AC"
-            MESSAGE="Accepted (Execution time: ${EXEC_TIME_MS} ms)"
+            MESSAGE="Accepted"
           else
             STATUS="WA"
-            MESSAGE="Wrong Answer (Execution time: ${EXEC_TIME_MS} ms)"
+            MESSAGE="Wrong Answer"
           fi
         fi
       fi
