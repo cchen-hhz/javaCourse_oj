@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SubmissionDto {
-    private Long userId;
     private Long problemId;
     private String language;
     private String code;

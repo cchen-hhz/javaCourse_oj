@@ -45,12 +45,12 @@ public class JudgeService {
     ConcurrentMap<Long, SubmissionConfig> submissionCache = new ConcurrentHashMap<>();
 
     @Transactional
-    public void handleSubmission(SubmissionDto submissionRequest) throws IOException{
+    public Long handleSubmission(Long userId, SubmissionDto submissionRequest) throws IOException{
         Submission sub = new Submission(
             null,
             LocalDateTime.now(),
             Status.PENDING,
-            submissionRequest.getUserId(),
+            userId,
             submissionRequest.getProblemId(),
             submissionRequest.getLanguage(),
             null
@@ -58,7 +58,8 @@ public class JudgeService {
         submissionMapper.insertSubmission(sub);
         fileManager.saveSubmissionCode(sub.getId(), submissionRequest.getCode());
 
-        //TODO: kafa
+        sendSubmission(sub);
+        return sub.getId();
     }
     
     public void sendSubmission(Submission submission) {
@@ -79,34 +80,67 @@ public class JudgeService {
             return c;
         });
 
-        config.setStatus(message.getStatus());
+        synchronized (config) {
+            config.setStatus(message.getStatus());
 
-        if (message.getTestcase() == 0) {
-            config.setCompileMessage(message.getMessage());
-        } else {
-            TestResult testResult = new TestResult();
-            testResult.setCaseId(message.getTestcase());
-            testResult.setStatus(message.getStatus());
-            testResult.setTime(message.getTimeUsed());
-            testResult.setMemory(message.getMemoryUsed());
-            testResult.setInput(message.getInput());
-            testResult.setUserOutput(message.getUserOutput());
-            testResult.setExpectedOutput(message.getExpectedOutput());
-            testResult.setMessage(message.getMessage());
-            config.getTestResult().add(testResult);
+            if (message.getTestcase() == 0) {
+                config.setCompileMessage(message.getMessage());
+            } else {
+                TestResult testResult = new TestResult();
+                testResult.setCaseId(message.getTestcase());
+                testResult.setStatus(message.getStatus());
+                testResult.setTime(message.getTimeUsed());
+                testResult.setMemory(message.getMemoryUsed());
+                testResult.setInput(message.getInput());
+                testResult.setUserOutput(message.getUserOutput());
+                testResult.setExpectedOutput(message.getExpectedOutput());
+                testResult.setMessage(message.getMessage());
+                config.getTestResult().add(testResult);
 
-            config.setTimeUsed(Math.max(config.getTimeUsed(), message.getTimeUsed()));
-            config.setMemoryUsed(Math.max(config.getMemoryUsed(), message.getMemoryUsed()));
+                config.setTimeUsed(Math.max(config.getTimeUsed(), message.getTimeUsed()));
+                config.setMemoryUsed(Math.max(config.getMemoryUsed(), message.getMemoryUsed()));
+            }
+
+            if (Boolean.TRUE.equals(message.getComplete())) {
+                try {
+                    fileManager.saveSubmissionConfig(message.getSubmissionId(), config);
+                    submissionMapper.updateSubmissionStatusById(message.getSubmissionId(), Status.DONE);
+                    submissionCache.remove(message.getSubmissionId());
+                } catch (IOException e) {
+                    throw new BusinessException(CommonErrorCode.FILE_OPERATION_ERROR, "Failed to save submission config for submissionId: " + message.getSubmissionId());
+                }
+            }
+        }
+    }
+
+    public SubmissionConfig getSubmissionResult(Long submissionId) throws IOException {
+        Submission submission = submissionMapper.findSubmissionById(submissionId);
+        if (submission == null) {
+            throw new BusinessException(CommonErrorCode.RESOURCE_NOT_FOUND, "Submission not found");
         }
 
-        if (Boolean.TRUE.equals(message.getComplete())) {
-            try {
-                fileManager.saveSubmissionConfig(message.getSubmissionId(), config);
-                submissionMapper.updateSubmissionStatusById(message.getSubmissionId(), Status.DONE);
-                submissionCache.remove(message.getSubmissionId());
-            } catch (IOException e) {
-                throw new BusinessException(CommonErrorCode.FILE_OPERATION_ERROR, "Failed to save submission config for submissionId: " + message.getSubmissionId());
+        if (submission.getStatus() == Status.PENDING || submission.getStatus() == Status.JUDGING) {
+            SubmissionConfig config = submissionCache.get(submissionId);
+            if (config != null) {
+                return config;
             }
+            
+            // 5 分钟后自动寄寄
+            if (submission.getSubmissionTime().plusMinutes(5).isBefore(LocalDateTime.now())) {
+                log.warn("Submission {} timed out", submissionId);
+                SubmissionConfig errorConfig = new SubmissionConfig();
+                errorConfig.setStatus(6); // SYSTEM_ERROR
+                errorConfig.setTestResult(new ArrayList<>());
+                
+                fileManager.saveSubmissionConfig(submissionId, errorConfig);
+                submissionMapper.updateSubmissionStatusById(submissionId, Status.DONE);
+                
+                return errorConfig;
+            }
+            
+            return new SubmissionConfig();
+        } else {
+            return fileManager.getSubmissionConfig(submissionId);
         }
     }
 }
