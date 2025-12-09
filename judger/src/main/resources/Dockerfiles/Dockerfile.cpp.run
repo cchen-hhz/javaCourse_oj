@@ -3,7 +3,17 @@ FROM gcc:latest
 WORKDIR /app
 RUN mkdir -p /app/build /app/input
 
-COPY run-exec.sh /app/run-exec.sh
-RUN chmod +x /app/run-exec.sh
+# 拷贝脚本
+COPY run-submission.sh /app/run-submission.sh
+COPY run-exec.sh       /app/run-exec.sh
 
+# 赋予执行权限
+RUN chmod +x /app/run-exec.sh /app/run-submission.sh
+
+# 安装 python3 + pip + PyYAML
+RUN apt-get update && apt-get install -y \
+    python3 python3-pip python3-yaml \
+ && rm -rf /var/lib/apt/lists/*
+
+# 默认入口还是 run-exec.sh，submission 模式会用 --entrypoint 覆盖
 CMD ["/app/run-exec.sh"]
