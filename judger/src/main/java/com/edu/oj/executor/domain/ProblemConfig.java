@@ -1,5 +1,6 @@
 package com.edu.oj.executor.domain;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import lombok.Data;
 
@@ -15,9 +16,11 @@ public class ProblemConfig {
     private Long problemId;
 
     /** 统一的时间限制（毫秒），对该题所有测试点生效 */
+    @JsonProperty("time_limit")
     private Long timeLimitMs;
 
     /** 统一的内存限制（MB），对该题所有测试点生效 */
+    @JsonProperty("memory_limit")
     private Long memoryLimitMb;
 
     /**
@@ -25,7 +28,7 @@ public class ProblemConfig {
      */
     public Limits getLimitsWithDefault() {
         long t = (timeLimitMs != null) ? timeLimitMs : 1000L;
-        long m = (memoryLimitMb != null) ? memoryLimitMb : 256L;
+        long m = (memoryLimitMb != null) ? memoryLimitMb/256L : 256L;
         return new Limits(t, m);
     }
 

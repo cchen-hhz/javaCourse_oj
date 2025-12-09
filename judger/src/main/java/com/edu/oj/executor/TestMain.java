@@ -2,7 +2,7 @@ package com.edu.oj.executor;
 
 import com.edu.oj.executor.codeRunner.CodeRunner;
 import com.edu.oj.executor.codeRunner.DockerCodeRunner;
-import com.edu.oj.executor.domain.JudgeResult;
+import com.edu.oj.judge.JudgeResult;
 
 public class TestMain {
     public static void main(String[] args) {
@@ -11,7 +11,7 @@ public class TestMain {
 //            System.exit(1);
 //        }
         long submissionId = 1;
-        long problemId    = 1;
+        long problemId    = 0;
 
         CodeRunner runner = new DockerCodeRunner();
         CodeExecutor executor = new CodeExecutor(runner);

@@ -2,10 +2,9 @@ package com.edu.oj.executor;
 
 import com.edu.oj.executor.codeRunner.CodeRunner;
 import com.edu.oj.executor.domain.*;
-import com.edu.oj.executor.util.CompileOnce;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.edu.oj.judge.JudgeResult;
+import com.edu.oj.judge.RunResult;
+import com.edu.oj.judge.TestCaseResult;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -13,6 +12,8 @@ import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+
+import com.edu.oj.judge.TestCaseStatus;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 
 import static com.edu.oj.executor.domain.CodeFileInfo.detectCodeFile;
@@ -41,7 +42,7 @@ public class CodeExecutor {
     public JudgeResult judge(long submissionId, long problemId) {
         try {
             Path submissionDir = Paths.get("data", "submission", String.valueOf(submissionId));
-            Path problemTestCaseDir = Paths.get("data", "problem", String.valueOf(problemId), "testCases");
+            Path problemTestCaseDir = Paths.get("data", "problems", String.valueOf(problemId));
 
             if (!Files.isDirectory(submissionDir)) {
                 return JudgeResult.error("Submission dir not found: " + submissionDir);
@@ -161,37 +162,37 @@ public class CodeExecutor {
         }
 
         // 如果容器整体失败，按原有逻辑处理
-        if (!runResult.isSuccess()) {
-            List<TestCaseResult> errorResults = new ArrayList<>();
-            int idx = 1;
-            for (Path inFile : inFiles) {
-                String fileName = inFile.getFileName().toString();
-                String idStr = fileName.substring(0, fileName.length() - 3);
-                Path outFile = testCaseDir.resolve(idStr + ".out");
-                errorResults.add(new TestCaseResult(idx, TestCaseStatus.RE,
-                        "Submission run failed: " + runResult.getMessage(),
-                        inFile, outFile, runResult.getStdout(), null));
-                idx++;
-            }
-            return errorResults;
-        }
+//        if (!runResult.isSuccess()) {
+//            List<TestCaseResult> errorResults = new ArrayList<>();
+//            int idx = 1;
+//            for (Path inFile : inFiles) {
+//                String fileName = inFile.getFileName().toString();
+//                String idStr = fileName.substring(0, fileName.length() - 3);
+//                Path outFile = testCaseDir.resolve(idStr + ".out");
+//                errorResults.add(new TestCaseResult(idx, TestCaseStatus.RE,
+//                        "Submission run failed: " + runResult.getMessage(),
+//                        inFile, outFile, runResult.getStdout(), null));
+//                idx++;
+//            }
+//            return errorResults;
+//        }
 
         // 4. 从 results.yaml 解析每个测试点结果
-        if (!Files.exists(resultsFile)) {
-            // 万一容器没写结果文件，全部 RE
-            List<TestCaseResult> errorResults = new ArrayList<>();
-            int idx = 1;
-            for (Path inFile : inFiles) {
-                String fileName = inFile.getFileName().toString();
-                String idStr = fileName.substring(0, fileName.length() - 3);
-                Path outFile = testCaseDir.resolve(idStr + ".out");
-                errorResults.add(new TestCaseResult(idx, TestCaseStatus.RE,
-                        "Missing results.yaml from container",
-                        inFile, outFile, null, null));
-                idx++;
-            }
-            return errorResults;
-        }
+//        if (!Files.exists(resultsFile)) {
+//            // 万一容器没写结果文件，全部 RE
+//            List<TestCaseResult> errorResults = new ArrayList<>();
+//            int idx = 1;
+//            for (Path inFile : inFiles) {
+//                String fileName = inFile.getFileName().toString();
+//                String idStr = fileName.substring(0, fileName.length() - 3);
+//                Path outFile = testCaseDir.resolve(idStr + ".out");
+//                errorResults.add(new TestCaseResult(idx, TestCaseStatus.RE,
+//                        "Missing results.yaml from container",
+//                        inFile, outFile, null, null));
+//                idx++;
+//            }
+//            return errorResults;
+//        }
 
         String yamlContent = Files.readString(resultsFile, StandardCharsets.UTF_8);
         SubmissionRunResult submissionRunResult = mapper.readValue(yamlContent, SubmissionRunResult.class);
@@ -230,54 +231,54 @@ public class CodeExecutor {
     /**
      * 对单个测试点进行评测
      */
-    private TestCaseResult runSingleTestCase(int index, int caseId, CodeFileInfo codeFileInfo, Path inFile, Path outFile, ProblemConfig.Limits limits, Path executablePath) {
-        try {
-            // 期望输出
-            String expectedOutput = Files.readString(outFile, StandardCharsets.UTF_8);
-
-            // 组装 RunRequest
-            RunRequest request = new RunRequest();
-            request.setLanguage(codeFileInfo.getLanguage());
-            request.setInputPath(inFile);
-            request.setTimeLimitMs(limits.getTimeLimitMs());
-            request.setMemoryLimitMb(limits.getMemoryLimitMb());
-            request.setCaseId(caseId);
-            Language lang = codeFileInfo.getLanguage();
-            if (lang == Language.PYTHON) {
-                request.setCodePath(codeFileInfo.getCodePath());
-            } else {
-                request.setExecutablePath(executablePath);
-            }
-
-            // 真正执行
-            RunResult runResult = codeRunner.runInSandbox(request);
-
-            String timeInfo = runResult.getMessage(); // 可能是 "Execution time: X ms" 或 null
-            System.out.println(timeInfo);
-            if (!runResult.isSuccess()) {
-                String msg = "Runtime Error";
-                if (timeInfo != null) {
-                    msg += " (" + timeInfo + ")";
-                } else if (runResult.getMessage() != null) {
-                    msg += ": " + runResult.getMessage();
-                }
-                return new TestCaseResult(index, TestCaseStatus.RE, msg, inFile, outFile, runResult.getStdout(), expectedOutput);
-            }
-
-            String actualOutput = runResult.getStdout();
-            boolean accepted = normalizeOutput(actualOutput).equals(normalizeOutput(expectedOutput));
-
-            String msg;
-            if (accepted) {
-                msg = (timeInfo != null) ? ("Accepted (" + timeInfo + ")") : "Accepted";
-            } else {
-                msg = (timeInfo != null) ? ("Wrong Answer (" + timeInfo + ")") : "Wrong Answer";
-            }
-
-            return new TestCaseResult(index, accepted ? TestCaseStatus.AC : TestCaseStatus.WA, msg, inFile, outFile, actualOutput, expectedOutput);
-        } catch (Exception e) {
-            return new TestCaseResult(index, TestCaseStatus.RE, "Exception: " + e.getMessage(), inFile, outFile, null, null);
-        }
-    }
+//    private TestCaseResult runSingleTestCase(int index, int caseId, CodeFileInfo codeFileInfo, Path inFile, Path outFile, ProblemConfig.Limits limits, Path executablePath) {
+//        try {
+//            // 期望输出
+//            String expectedOutput = Files.readString(outFile, StandardCharsets.UTF_8);
+//
+//            // 组装 RunRequest
+//            RunRequest request = new RunRequest();
+//            request.setLanguage(codeFileInfo.getLanguage());
+//            request.setInputPath(inFile);
+//            request.setTimeLimitMs(limits.getTimeLimitMs());
+//            request.setMemoryLimitMb(limits.getMemoryLimitMb());
+//            request.setCaseId(caseId);
+//            Language lang = codeFileInfo.getLanguage();
+//            if (lang == Language.PYTHON) {
+//                request.setCodePath(codeFileInfo.getCodePath());
+//            } else {
+//                request.setExecutablePath(executablePath);
+//            }
+//
+//            // 真正执行
+//            RunResult runResult = codeRunner.runInSandbox(request);
+//
+//            String timeInfo = runResult.getMessage(); // 可能是 "Execution time: X ms" 或 null
+//            System.out.println(timeInfo);
+//            if (!runResult.isSuccess()) {
+//                String msg = "Runtime Error";
+//                if (timeInfo != null) {
+//                    msg += " (" + timeInfo + ")";
+//                } else if (runResult.getMessage() != null) {
+//                    msg += ": " + runResult.getMessage();
+//                }
+//                return new TestCaseResult(index, TestCaseStatus.RE, msg, inFile, outFile, runResult.getStdout(), expectedOutput);
+//            }
+//
+//            String actualOutput = runResult.getStdout();
+//            boolean accepted = normalizeOutput(actualOutput).equals(normalizeOutput(expectedOutput));
+//
+//            String msg;
+//            if (accepted) {
+//                msg = (timeInfo != null) ? ("Accepted (" + timeInfo + ")") : "Accepted";
+//            } else {
+//                msg = (timeInfo != null) ? ("Wrong Answer (" + timeInfo + ")") : "Wrong Answer";
+//            }
+//
+//            return new TestCaseResult(index, accepted ? TestCaseStatus.AC : TestCaseStatus.WA, msg, inFile, outFile, actualOutput, expectedOutput);
+//        } catch (Exception e) {
+//            return new TestCaseResult(index, TestCaseStatus.RE, "Exception: " + e.getMessage(), inFile, outFile, null, null);
+//        }
+//    }
 
 }
