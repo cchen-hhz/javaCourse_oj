@@ -1,5 +1,7 @@
 package com.edu.oj.manager;
 
+import com.edu.oj.entity.Submission;
+import com.edu.oj.entity.SubmissionConfig;
 import com.edu.oj.exceptions.BusinessException;
 import com.edu.oj.exceptions.CommonErrorCode;
 import com.edu.oj.judge.ProblemConfig;
@@ -170,5 +172,9 @@ public class FileSystemManager {
 
     public void saveSubmissionConfig(Long submissionId, com.edu.oj.entity.SubmissionConfig config) throws IOException {
         submissionFileManager.saveSubmissionConfig(submissionId, config);
+    }
+
+    public SubmissionConfig getSubmissionConfig(Long submissionId) throws IOException {
+        return submissionFileManager.getSubmissionConfig(submissionId);
     }
 }
