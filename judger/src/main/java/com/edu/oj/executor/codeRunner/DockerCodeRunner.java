@@ -2,10 +2,11 @@ package com.edu.oj.executor.codeRunner;
 
 import com.edu.oj.executor.domain.Language;
 import com.edu.oj.executor.domain.RunRequest;
-import com.edu.oj.executor.domain.RunResult;
+import com.edu.oj.judge.RunResult;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -15,8 +16,6 @@ import java.util.concurrent.TimeUnit;
 
 import static com.edu.oj.executor.util.CollectIO.collectIO;
 import static com.edu.oj.executor.util.KillContainer.killContainer;
-
-import java.io.InputStream;
 
 /**
  * 使用 Docker 在沙箱中编译和运行代码。

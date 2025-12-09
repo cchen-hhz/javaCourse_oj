@@ -1,4 +1,4 @@
-package com.edu.oj.executor.domain;
+package com.edu.oj.judge;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -31,6 +31,8 @@ public class TestCaseResult {
         return new TestCaseResult(index, TestCaseStatus.RE,
                 "Runtime Error: " + msg, in, out, null, null);
     }
+
+
 
     public static TestCaseResult missingOutputFile(int index, Path in, Path out) {
         return new TestCaseResult(index, TestCaseStatus.CONFIG_ERROR,

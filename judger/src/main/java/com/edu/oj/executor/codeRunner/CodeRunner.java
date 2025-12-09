@@ -1,7 +1,7 @@
 package com.edu.oj.executor.codeRunner;
 
 import com.edu.oj.executor.domain.RunRequest;
-import com.edu.oj.executor.domain.RunResult;
+import com.edu.oj.judge.RunResult;
 
 import java.io.IOException;
 

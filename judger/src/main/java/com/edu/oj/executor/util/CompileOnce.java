@@ -3,7 +3,7 @@ package com.edu.oj.executor.util;
 import com.edu.oj.executor.domain.CodeFileInfo;
 import com.edu.oj.executor.domain.CompileResult;
 import com.edu.oj.executor.domain.RunRequest;
-import com.edu.oj.executor.domain.RunResult;
+import com.edu.oj.judge.RunResult;
 import com.edu.oj.executor.codeRunner.CodeRunner;
 
 import java.nio.file.Files;

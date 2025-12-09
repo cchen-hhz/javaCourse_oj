@@ -1,4 +1,4 @@
-package com.edu.oj.executor.domain;
+package com.edu.oj.judge;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
