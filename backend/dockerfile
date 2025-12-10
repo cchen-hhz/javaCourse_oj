@@ -1,2 +1,9 @@
-FROM 4.0.0-rc-5-amazoncorretto-25-debian
+FROM maven:4.0.0-rc-5-amazoncorretto-25-debian
 
+WORKDIR /app
+
+COPY . .
+
+RUN ["mvn", "clean", "install", "-DskipTests"]
+
+CMD ["mvn", "spring-boot:run", "-pl", "main"]
