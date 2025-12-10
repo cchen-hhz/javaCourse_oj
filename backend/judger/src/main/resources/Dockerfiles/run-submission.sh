@@ -226,10 +226,10 @@ echo "$CASE_LINES" | while IFS='|' read -r INDEX CASE_ID IN_FILE OUT_FILE; do
         else
           if diff -ZB "$EXPECTED_PATH" "$ACTUAL_PATH" >/dev/null 2>&1; then
             STATUS="AC"
-            MESSAGE="Accepted (Execution time: ${EXEC_TIME_MS} ms)"
+            MESSAGE="Accepted"
           else
             STATUS="WA"
-            MESSAGE="Wrong Answer (Execution time: ${EXEC_TIME_MS} ms)"
+            MESSAGE="Wrong Answer"
           fi
         fi
       fi
@@ -252,16 +252,17 @@ echo "$CASE_LINES" | while IFS='|' read -r INDEX CASE_ID IN_FILE OUT_FILE; do
   # 4.5 写入 YAML 一条用例  #
   ##########################
   PY_ESCAPED="$(
-    python3 - "$CASE_ID" "$INDEX" "$STATUS" "$MESSAGE" "$EXEC_TIME_MS" "$MEM_KB" << 'PYCODE'
+    python3 - "$CASE_ID" "$INDEX" "$STATUS" "$MESSAGE" "$EXEC_TIME_MS" "$MEM_KB" "$ACTUAL_PATH" << 'PYCODE'
 import sys
+import os
 
-case_id      = int(sys.argv[1])
-index        = int(sys.argv[2])
-status       = sys.argv[3]
-message      = sys.argv[4]
-exec_ms_raw  = sys.argv[5]
+case_id       = int(sys.argv[1])
+index         = int(sys.argv[2])
+status        = sys.argv[3]
+message       = sys.argv[4]
+exec_ms_raw   = sys.argv[5]
 memory_kb_raw = sys.argv[6] if len(sys.argv) > 6 else ""
-actual_out   = ""
+actual_path   = sys.argv[7] if len(sys.argv) > 7 else ""
 
 try:
     exec_ms = int(exec_ms_raw)
@@ -273,7 +274,13 @@ try:
 except Exception:
     memory_kb = None
 
-actual_out   = sys.stdin.read()
+actual_out = ""
+if actual_path and os.path.isfile(actual_path):
+    try:
+        with open(actual_path, "r", encoding="utf-8", errors="replace") as f:
+            actual_out = f.read()
+    except Exception:
+        actual_out = ""
 
 def yaml_escape_block(s, indent="      "):
     if not s:
@@ -300,10 +307,7 @@ if memory_kb is None:
 else:
     print(f"    memoryKb: {memory_kb}")
 PYCODE
-<< EOF_IN
-$ACTUAL_CONTENT
-EOF_IN
-)"
+  )"
 
 
   printf '%s\n' "$PY_ESCAPED" >> "$TMP_RESULTS"

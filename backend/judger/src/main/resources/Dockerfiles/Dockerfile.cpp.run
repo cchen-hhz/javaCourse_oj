@@ -5,11 +5,11 @@ WORKDIR /app
 RUN mkdir -p /app/build /app/input
 
 COPY run-submission.sh /app/run-submission.sh
-COPY run-exec.sh       /app/run-exec.sh
+COPY run-exec.sh      /app/run-exec.sh
 RUN chmod +x /app/run-exec.sh /app/run-submission.sh
 
-# 只装 python3 + PyYAML，禁止自动推荐一堆乱七八糟的包
+# 装 python3 + PyYAML + /usr/bin/time
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        python3 python3-yaml \
+        python3 python3-yaml time \
     && rm -rf /var/lib/apt/lists/*
