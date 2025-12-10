@@ -11,10 +11,10 @@ docker compose -f docker-compose.yml up --build
 
 如果 `backend` 镜像构建好了，就不需要 build 了。
 
-移除容器：记得删除卷
+移除容器：
 
 ```sh
-docker compose -p backend down -v
+docker compose -p backend down
 ```
 
 
