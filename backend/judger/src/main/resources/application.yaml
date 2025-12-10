@@ -9,6 +9,13 @@ spring:
     username: oj_admin
     password: oj_token
     driver-class-name: com.mysql.cj.jdbc.Driver
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: judge-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest
 
 mybatis:
   configuration:

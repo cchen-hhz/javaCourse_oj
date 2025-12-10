@@ -13,6 +13,7 @@ import java.nio.file.Paths;
 public class ProblemConfig {
 
     /** 题目 ID，可选字段，用于校验/调试 */
+    @JsonProperty("id")
     private Long problemId;
 
     /** 统一的时间限制（毫秒），对该题所有测试点生效 */
@@ -39,7 +40,7 @@ public class ProblemConfig {
     }
 
     public static ProblemConfig loadProblemConfig(long problemId) throws IOException {
-        Path configPath = Paths.get("data", "problem", String.valueOf(problemId),"testCases", "data.yml");
+        Path configPath = Paths.get("data", "problems", String.valueOf(problemId), "config.yml");
         ProblemConfig cfg;
         if (!Files.exists(configPath)) {
             System.out.println("checkout:"+problemId+" "+configPath.toString());
