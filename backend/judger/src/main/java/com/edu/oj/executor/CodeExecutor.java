@@ -3,6 +3,7 @@ package com.edu.oj.executor;
 import com.edu.oj.executor.codeRunner.CodeRunner;
 import com.edu.oj.executor.domain.*;
 import com.edu.oj.judge.JudgeResult;
+import com.edu.oj.judge.RunResult;
 import com.edu.oj.judge.TestCaseResult;
 
 import java.io.IOException;
@@ -18,7 +19,10 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import static com.edu.oj.executor.domain.CodeFileInfo.detectCodeFile;
 import static com.edu.oj.executor.domain.ProblemConfig.loadProblemConfig;
 import static com.edu.oj.executor.util.CompileOnce.compileOnce;
+import static com.edu.oj.executor.util.NormalizeOutput.normalizeOutput;
+import static com.edu.oj.executor.util.StringByteUtil.truncateUtf8;
 
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 
 /**
  * 负责：
@@ -40,8 +44,8 @@ public class CodeExecutor {
      */
     public JudgeResult judge(long submissionId, long problemId) {
         try {
-            Path submissionDir = Paths.get("data", "submission", String.valueOf(submissionId));
-            Path problemTestCaseDir = Paths.get("data", "problems", String.valueOf(problemId));
+            Path submissionDir = Paths.get("backend","data", "submission", String.valueOf(submissionId));
+            Path problemTestCaseDir = Paths.get("backend","data", "problems", String.valueOf(problemId));
 
             if (!Files.isDirectory(submissionDir)) {
                 return JudgeResult.error("Submission dir not found: " + submissionDir);
@@ -141,8 +145,9 @@ public class CodeExecutor {
         request.setMetaFilePath(metaFile);
         request.setResultsFilePath(resultsFile);
 
+        RunResult runResult;
         try {
-            codeRunner.runInSandbox(request);
+            runResult = codeRunner.runInSandbox(request);
         } catch (Exception e) {
             // 整体运行失败，所有测试点标 RE
             List<TestCaseResult> errorResults = new ArrayList<>();
@@ -153,11 +158,44 @@ public class CodeExecutor {
                 Path outFile = testCaseDir.resolve(idStr + ".out");
                 errorResults.add(new TestCaseResult(idx, TestCaseStatus.RE,
                         "Exception in submission run: " + e.getMessage(),
-                        inFile, outFile, null, null));
+                        inFile, outFile, null, null,"","",""));
                 idx++;
             }
             return errorResults;
         }
+
+        // 如果容器整体失败，按原有逻辑处理
+//        if (!runResult.isSuccess()) {
+//            List<TestCaseResult> errorResults = new ArrayList<>();
+//            int idx = 1;
+//            for (Path inFile : inFiles) {
+//                String fileName = inFile.getFileName().toString();
+//                String idStr = fileName.substring(0, fileName.length() - 3);
+//                Path outFile = testCaseDir.resolve(idStr + ".out");
+//                errorResults.add(new TestCaseResult(idx, TestCaseStatus.RE,
+//                        "Submission run failed: " + runResult.getMessage(),
+//                        inFile, outFile, runResult.getStdout(), null));
+//                idx++;
+//            }
+//            return errorResults;
+//        }
+
+        // 4. 从 results.yaml 解析每个测试点结果
+//        if (!Files.exists(resultsFile)) {
+//            // 万一容器没写结果文件，全部 RE
+//            List<TestCaseResult> errorResults = new ArrayList<>();
+//            int idx = 1;
+//            for (Path inFile : inFiles) {
+//                String fileName = inFile.getFileName().toString();
+//                String idStr = fileName.substring(0, fileName.length() - 3);
+//                Path outFile = testCaseDir.resolve(idStr + ".out");
+//                errorResults.add(new TestCaseResult(idx, TestCaseStatus.RE,
+//                        "Missing results.yaml from container",
+//                        inFile, outFile, null, null));
+//                idx++;
+//            }
+//            return errorResults;
+//        }
 
         String yamlContent = Files.readString(resultsFile, StandardCharsets.UTF_8);
         SubmissionRunResult submissionRunResult = mapper.readValue(yamlContent, SubmissionRunResult.class);
@@ -165,6 +203,7 @@ public class CodeExecutor {
         // 映射回 TestCaseResult 列表（保证 index / inFile / outFile 与原来一致）
         List<TestCaseResult> finalResults = new ArrayList<>();
         for (TestCaseMeta meta : metas) {
+            System.out.println(metas.toString());
             SingleCaseResultDto dto = submissionRunResult.findByCaseId(meta.getCaseId());
             Path inFile = testCaseDir.resolve(meta.getInputFile());
             Path outFile = testCaseDir.resolve(meta.getOutputFile());
@@ -174,7 +213,7 @@ public class CodeExecutor {
                         meta.getIndex(),
                         TestCaseStatus.RE,
                         "No result from container for caseId=" + meta.getCaseId(),
-                        inFile, outFile, null, null
+                        inFile, outFile, null, null,"","",""
                 ));
             } else {
                 TestCaseStatus status = dto.getStatus();   // AC/WA/RE/TLE
@@ -183,13 +222,87 @@ public class CodeExecutor {
                 String expected = Files.exists(outFile)
                         ? Files.readString(outFile, StandardCharsets.UTF_8)
                         : null;
+                Long execMs = dto.getExecTimeMs();
+                Integer memKb  = dto.getMemoryKb();
 
+                StringBuilder extra = new StringBuilder();
+                if (execMs != null) {
+                    extra.append("time: ").append(execMs).append(" ms");
+                }
+                if (memKb != null) {
+                    if (extra.length() > 0) extra.append(", ");
+                    extra.append("memory: ").append(memKb).append(" KB");
+                }
+
+                if (extra.length() > 0) {
+                    if (msg == null || msg.isEmpty()) {
+                        msg = extra.toString();
+                    } else {
+                        msg = msg + " (" + extra + ")";
+                    }
+                }
+                String inputContent = Files.readString(inFile, StandardCharsets.UTF_8);
+                String inputPreview    = truncateUtf8(inputContent, 50);
+                String userOutputPrev  = truncateUtf8(actual, 50);
+                String expectedPreview = truncateUtf8(expected, 50);
                 finalResults.add(new TestCaseResult(
-                        meta.getIndex(), status, msg, inFile, outFile, actual, expected
+                        meta.getIndex(), status, msg, inFile, outFile, actual, expected,inputPreview,expectedPreview,userOutputPrev
                 ));
+
             }
         }
 
         return finalResults;
     }
+//    @Deprecated
+//    private TestCaseResult runSingleTestCase(int index, int caseId, CodeFileInfo codeFileInfo, Path inFile, Path outFile, ProblemConfig.Limits limits, Path executablePath) {
+//        try {
+//            // 期望输出
+//            String expectedOutput = Files.readString(outFile, StandardCharsets.UTF_8);
+//
+//            // 组装 RunRequest
+//            RunRequest request = new RunRequest();
+//            request.setLanguage(codeFileInfo.getLanguage());
+//            request.setInputPath(inFile);
+//            request.setTimeLimitMs(limits.getTimeLimitMs());
+//            request.setMemoryLimitMb(limits.getMemoryLimitMb());
+//            request.setCaseId(caseId);
+//            Language lang = codeFileInfo.getLanguage();
+//            if (lang == Language.PYTHON) {
+//                request.setCodePath(codeFileInfo.getCodePath());
+//            } else {
+//                request.setExecutablePath(executablePath);
+//            }
+//
+//            // 真正执行
+//            RunResult runResult = codeRunner.runInSandbox(request);
+//
+//            String timeInfo = runResult.getMessage(); // 可能是 "Execution time: X ms" 或 null
+//            System.out.println(timeInfo);
+//            if (!runResult.isSuccess()) {
+//                String msg = "Runtime Error";
+//                if (timeInfo != null) {
+//                    msg += " (" + timeInfo + ")";
+//                } else if (runResult.getMessage() != null) {
+//                    msg += ": " + runResult.getMessage();
+//                }
+//                return new TestCaseResult(index, TestCaseStatus.RE, msg, inFile, outFile, runResult.getStdout(), expectedOutput);
+//            }
+//
+//            String actualOutput = runResult.getStdout();
+//            boolean accepted = normalizeOutput(actualOutput).equals(normalizeOutput(expectedOutput));
+//
+//            String msg;
+//            if (accepted) {
+//                msg = (timeInfo != null) ? ("Accepted (" + timeInfo + ")") : "Accepted";
+//            } else {
+//                msg = (timeInfo != null) ? ("Wrong Answer (" + timeInfo + ")") : "Wrong Answer";
+//            }
+//
+//            return new TestCaseResult(index, accepted ? TestCaseStatus.AC : TestCaseStatus.WA, msg, inFile, outFile, actualOutput, expectedOutput);
+//        } catch (Exception e) {
+//            return new TestCaseResult(index, TestCaseStatus.RE, "Exception: " + e.getMessage(), inFile, outFile, null, null);
+//        }
+//    }
+
 }
