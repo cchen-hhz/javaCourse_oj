@@ -20,6 +20,7 @@ import static com.edu.oj.executor.domain.CodeFileInfo.detectCodeFile;
 import static com.edu.oj.executor.domain.ProblemConfig.loadProblemConfig;
 import static com.edu.oj.executor.util.CompileOnce.compileOnce;
 import static com.edu.oj.executor.util.NormalizeOutput.normalizeOutput;
+import static com.edu.oj.executor.util.StringByteUtil.truncateUtf8;
 
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 
@@ -157,7 +158,7 @@ public class CodeExecutor {
                 Path outFile = testCaseDir.resolve(idStr + ".out");
                 errorResults.add(new TestCaseResult(idx, TestCaseStatus.RE,
                         "Exception in submission run: " + e.getMessage(),
-                        inFile, outFile, null, null));
+                        inFile, outFile, null, null,"","",""));
                 idx++;
             }
             return errorResults;
@@ -211,7 +212,7 @@ public class CodeExecutor {
                         meta.getIndex(),
                         TestCaseStatus.RE,
                         "No result from container for caseId=" + meta.getCaseId(),
-                        inFile, outFile, null, null
+                        inFile, outFile, null, null,"","",""
                 ));
             } else {
                 TestCaseStatus status = dto.getStatus();   // AC/WA/RE/TLE
@@ -239,9 +240,12 @@ public class CodeExecutor {
                         msg = msg + " (" + extra + ")";
                     }
                 }
-
+                String inputContent = Files.readString(inFile, StandardCharsets.UTF_8);
+                String inputPreview    = truncateUtf8(inputContent, 50);
+                String userOutputPrev  = truncateUtf8(actual, 50);
+                String expectedPreview = truncateUtf8(expected, 50);
                 finalResults.add(new TestCaseResult(
-                        meta.getIndex(), status, msg, inFile, outFile, actual, expected
+                        meta.getIndex(), status, msg, inFile, outFile, actual, expected,inputPreview,userOutputPrev,expectedPreview
                 ));
 
             }

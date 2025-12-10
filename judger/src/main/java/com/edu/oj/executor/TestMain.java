@@ -23,7 +23,8 @@ public class TestMain {
                 System.out.println(
                         "#" + tc.getIndex() + " " +
                                 tc.getStatus() + " - " +
-                                tc.getMessage()
+                                tc.getMessage() + " IN:"+ tc.getInputPreview()+
+                                " OUT:"+ tc.getExpectedOutput()+" GOT:"+ tc.getActualOutput()
                 );
             });
         } else {
