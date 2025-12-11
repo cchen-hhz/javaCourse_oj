@@ -7,6 +7,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDateTime;
 import com.edu.oj.dto.SubmissionDto;
@@ -30,8 +31,8 @@ import com.edu.oj.exceptions.CommonErrorCode;
 @Service
 @Slf4j
 public class JudgeService {
-    private static final String JUDGE_TOPIC = "judger";
-    private static final String RESULT_TOPIC = "judge-result";
+    @Value("${spring.kafka.topic.submission}")
+    private String judgeTopic;
 
     @Autowired
     FileSystemManager fileManager;
@@ -56,19 +57,20 @@ public class JudgeService {
             null
         );
         submissionMapper.insertSubmission(sub);
-        fileManager.saveSubmissionCode(sub.getId(), submissionRequest.getCode());
+        fileManager.saveSubmissionCode(sub.getId(), submissionRequest.getCode(), submissionRequest.getLanguage());
 
         sendSubmission(sub);
         return sub.getId();
     }
     
+    @SuppressWarnings("null")
     public void sendSubmission(Submission submission) {
         log.info("Sending submission to judge queue:" + submission.getId());
-        kafkaTemplate.send(JUDGE_TOPIC, new SubmissionMessage(submission.getId(), submission.getProblemId()));
+        kafkaTemplate.send(judgeTopic, new SubmissionMessage(submission.getId(), submission.getProblemId(), submission.getLanguage()));
     }
 
     @Transactional
-    @KafkaListener(topics = RESULT_TOPIC, groupId = "judge-service-group")
+    @KafkaListener(topics = "${spring.kafka.topic.result}", groupId = "judge-service-group")
     public void receiveJudgeResult(ResultMessage message) {
         log.info("Received judge result for submission: {} for case {}", message.getSubmissionId(), message.getTestcase());
         
@@ -145,7 +147,12 @@ public class JudgeService {
     }
 
     public String getSubmissionCode(Long submissionId) throws IOException {
-        try (java.io.InputStream inputStream = fileManager.getSubmissionFileStream(submissionId, "code.cpp")) {
+        Submission submission = submissionMapper.findSubmissionById(submissionId);
+        if (submission == null) {
+            throw new BusinessException(CommonErrorCode.RESOURCE_NOT_FOUND, "Submission not found");
+        }
+        String extension = FileSystemManager.getExtensionByLanguage(submission.getLanguage());
+        try (java.io.InputStream inputStream = fileManager.getSubmissionFileStream(submissionId, "code." + extension)) {
             return new String(inputStream.readAllBytes());
         }
     }

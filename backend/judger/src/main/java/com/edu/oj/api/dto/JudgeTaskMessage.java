@@ -6,4 +6,5 @@ import lombok.Data;
 public class JudgeTaskMessage {
     private long submissionId;
     private long problemId;
+    private String language;
 }

@@ -9,6 +9,11 @@ services:
     depends_on:
       - mysql
       - kafka
+      - seaweedfs
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/oj_db
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - S3_ENDPOINT=http://seaweedfs:8333
     volumes:
       - ./data:/app/data
   mysql:
@@ -18,8 +23,6 @@ services:
       MYSQL_USER: oj_admin
       MYSQL_PASSWORD: oj_token
       MYSQL_ROOT_PASSWORD: root_password
-    ports:
-      - "3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
       - ./sqlschema:/docker-entrypoint-initdb.d:ro
@@ -43,8 +46,14 @@ services:
       - KAFKA_INTER_BROKER_LISTENER_NAME=DEV
     volumes:
       - kafka-data:/var/lib/kafka/data
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.02
+    command: server -s3
+    volumes:
+      - seaweedfs-data:/data
 
 volumes:
   mysql-data:
   kafka-data:
+  seaweedfs-data:
   

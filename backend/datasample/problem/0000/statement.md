@@ -1,1 +1,0 @@
-docker run --rm -v "$PWD/data/submission/1":/app/code:ro -v "$PWD/data/problem/1001/testCases":/app/input:ro cpp-judge code.cpp /app/input/1.in

@@ -8,4 +8,5 @@ import lombok.Data;
 public class SubmissionMessage {
     public Long submissionId;
     public Long problemId;
+    public String language;
 }
