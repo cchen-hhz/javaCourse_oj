@@ -1,3 +1,4 @@
+
 services:
   backend:
     image: oj-backend:1.0.0
@@ -48,12 +49,21 @@ services:
       - kafka-data:/var/lib/kafka/data
   seaweedfs:
     image: chrislusf/seaweedfs:4.02
-    command: server -s3
+    command: server -s3 -s3.config=/etc/seaweedfs/s3_config.json
+    ports:
+      - "9333:9333"
+      - "8888:8888"
     volumes:
       - seaweedfs-data:/data
+      - ./seaweedfs_config/s3_config.json:/etc/seaweedfs/s3_config.json:ro
 
 volumes:
   mysql-data:
   kafka-data:
   seaweedfs-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ../data/seaweedfs
+      o: bind
   

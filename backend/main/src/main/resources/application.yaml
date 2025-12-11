@@ -19,7 +19,13 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
-        "[spring.json.add.type.headers]": true
+        "[spring.json.add.type.headers]": false
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        "[spring.json.trusted.packages]": "*"
+        "[spring.json.value.default.type]": "com.edu.oj.message.ResultMessage"
     topic:
       submission: submission-queue
       result: judge-result

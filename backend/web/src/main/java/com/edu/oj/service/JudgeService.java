@@ -54,10 +54,17 @@ public class JudgeService {
             userId,
             submissionRequest.getProblemId(),
             submissionRequest.getLanguage(),
-            null
+            (short)0
         );
         submissionMapper.insertSubmission(sub);
         fileManager.saveSubmissionCode(sub.getId(), submissionRequest.getCode(), submissionRequest.getLanguage());
+
+        SubmissionConfig config = new SubmissionConfig();
+        config.setStatus(7);
+        config.setTestResult(new ArrayList<>());
+        config.setTimeUsed(0);
+        config.setMemoryUsed(0);
+        submissionCache.put(sub.getId(), config);
 
         sendSubmission(sub);
         return sub.getId();
@@ -72,8 +79,23 @@ public class JudgeService {
     @Transactional
     @KafkaListener(topics = "${spring.kafka.topic.result}", groupId = "judge-service-group")
     public void receiveJudgeResult(ResultMessage message) {
-        log.info("Received judge result for submission: {} for case {}", message.getSubmissionId(), message.getTestcase());
+        log.info("Received judge result for submission: {} for case {}", message.getSubmissionId(), message.getTestCaseId());
         
+        if (Boolean.FALSE.equals(message.getCorrect())) {
+             log.error("System error for submission: {}", message.getSubmissionId());
+             SubmissionConfig errorConfig = new SubmissionConfig();
+             errorConfig.setStatus(-2); // SYSTEM_ERROR
+             errorConfig.setTestResult(new ArrayList<>());
+             try {
+                fileManager.saveSubmissionConfig(message.getSubmissionId(), errorConfig);
+                submissionMapper.updateSubmissionStatusById(message.getSubmissionId(), Status.DONE);
+                submissionCache.remove(message.getSubmissionId());
+             } catch (IOException e) {
+                 log.error("Failed to save error config", e);
+             }
+             return;
+        }
+
         SubmissionConfig config = submissionCache.computeIfAbsent(message.getSubmissionId(), k -> {
             SubmissionConfig c = new SubmissionConfig();
             c.setTestResult(new ArrayList<>());
@@ -83,28 +105,29 @@ public class JudgeService {
         });
 
         synchronized (config) {
-            config.setStatus(message.getStatus());
+            config.setStatus(message.getStatus().intValue());
 
-            if (message.getTestcase() == 0) {
+            if (message.getTestCaseId() == 0) {
                 config.setCompileMessage(message.getMessage());
             } else {
                 TestResult testResult = new TestResult();
-                testResult.setCaseId(message.getTestcase());
-                testResult.setStatus(message.getStatus());
-                testResult.setTime(message.getTimeUsed());
-                testResult.setMemory(message.getMemoryUsed());
+                testResult.setCaseId(message.getTestCaseId().intValue());
+                testResult.setStatus(message.getStatus().intValue());
+                testResult.setTime(message.getTimeUsed().intValue());
+                testResult.setMemory(message.getMemoryUsed().intValue());
                 testResult.setInput(message.getInput());
                 testResult.setUserOutput(message.getUserOutput());
                 testResult.setExpectedOutput(message.getExpectedOutput());
                 testResult.setMessage(message.getMessage());
                 config.getTestResult().add(testResult);
 
-                config.setTimeUsed(Math.max(config.getTimeUsed(), message.getTimeUsed()));
-                config.setMemoryUsed(Math.max(config.getMemoryUsed(), message.getMemoryUsed()));
+                config.setTimeUsed(Math.max(config.getTimeUsed(), message.getTimeUsed().intValue()));
+                config.setMemoryUsed(Math.max(config.getMemoryUsed(), message.getMemoryUsed().intValue()));
             }
 
-            if (Boolean.TRUE.equals(message.getComplete())) {
+            if (Boolean.TRUE.equals(message.getIsOver())) {
                 try {
+                    config.setScore(message.getScore().intValue());
                     fileManager.saveSubmissionConfig(message.getSubmissionId(), config);
                     submissionMapper.updateSubmissionStatusById(message.getSubmissionId(), Status.DONE);
                     submissionCache.remove(message.getSubmissionId());
