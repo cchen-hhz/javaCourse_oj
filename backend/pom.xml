@@ -16,6 +16,5 @@
         <module>security</module>
         <module>web</module>
         <module>main</module>
-        <module>judger</module>
     </modules>
 </project>

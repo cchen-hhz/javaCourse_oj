@@ -15,9 +15,15 @@ public interface ProblemMapper {
     int problemCount();
 
     @Select("""
-            SELECT * FROM problems
+            <script>
+                SELECT * FROM problems
+                <if test="pageSize != null and pageNum != null">
+                    <bind name="offset" value="(pageNum - 1) * pageSize" />
+                    LIMIT #{pageSize} OFFSET #{offset}
+                </if>
+            </script>
             """)
-    Problem[] getAllProblems();
+    Problem[] getProblems(Long pageSize, Long pageNum);
 
     @Select("""
             SELECT * FROM problems

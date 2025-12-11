@@ -1,0 +1,10 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import UserProfile from '../../components/user/UserProfile.vue';
+
+const { id } = Astro.params;
+---
+
+<Layout>
+  <UserProfile client:only="vue" userId={id} />
+</Layout>

@@ -2,6 +2,7 @@ package com.edu.oj.mapper;
 
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -24,16 +25,19 @@ public interface SubmissionMapper {
     Submission findSubmissionById(Long submissionId);
 
     @Select("""
-            SELECT * FROM submissions
-            WHERE user_id = #{userId}
+            <script>
+                SELECT * FROM submissions
+                <where>
+                    <if test="userId != null">
+                        AND user_id = #{userId}
+                    </if>
+                    <if test="problemId != null">
+                        AND problem_id = #{problemId}
+                    </if>
+                </where>
+            </script>
             """)
-    Submission[] findSubmissionsByUserId(Long userId);
-
-    @Select("""
-            SELECT * FROM submissions
-            WHERE problem_id = #{problemId}
-            """)
-    Submission[] findSubmissionsByProblemId(Long problemId);
+    Submission[] getSubmissions(Long userId, Long problemId);
 
     @Update("""
             UPDATE submissions 
@@ -53,5 +57,6 @@ public interface SubmissionMapper {
             INSERT INTO submissions (submission_time, status, user_id, problem_id, language, score) 
             VALUES (#{submissionTime}, #{status}, #{userId}, #{problemId}, #{language}, #{score})
             """)
+    @Options(useGeneratedKeys = true, keyProperty = "id")
     int insertSubmission(Submission submission);
 }

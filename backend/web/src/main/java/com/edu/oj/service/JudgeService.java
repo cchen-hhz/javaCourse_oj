@@ -7,6 +7,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDateTime;
 import com.edu.oj.dto.SubmissionDto;
@@ -30,8 +31,8 @@ import com.edu.oj.exceptions.CommonErrorCode;
 @Service
 @Slf4j
 public class JudgeService {
-    private static final String JUDGE_TOPIC = "judger";
-    private static final String RESULT_TOPIC = "judge-result";
+    @Value("${spring.kafka.topic.submission}")
+    private String judgeTopic;
 
     @Autowired
     FileSystemManager fileManager;
@@ -44,6 +45,10 @@ public class JudgeService {
 
     ConcurrentMap<Long, SubmissionConfig> submissionCache = new ConcurrentHashMap<>();
 
+    public Submission[] getSubmissions(Long userId, Long problemId) {
+        return submissionMapper.getSubmissions(userId, problemId);
+    }
+
     @Transactional
     public Long handleSubmission(Long userId, SubmissionDto submissionRequest) throws IOException{
         Submission sub = new Submission(
@@ -53,25 +58,48 @@ public class JudgeService {
             userId,
             submissionRequest.getProblemId(),
             submissionRequest.getLanguage(),
-            null
+            (short)0
         );
         submissionMapper.insertSubmission(sub);
-        fileManager.saveSubmissionCode(sub.getId(), submissionRequest.getCode());
+        fileManager.saveSubmissionCode(sub.getId(), submissionRequest.getCode(), submissionRequest.getLanguage());
+
+        SubmissionConfig config = new SubmissionConfig();
+        config.setStatus(7);
+        config.setTestResult(new ArrayList<>());
+        config.setTimeUsed(0);
+        config.setMemoryUsed(0);
+        submissionCache.put(sub.getId(), config);
 
         sendSubmission(sub);
         return sub.getId();
     }
     
+    @SuppressWarnings("null")
     public void sendSubmission(Submission submission) {
         log.info("Sending submission to judge queue:" + submission.getId());
-        kafkaTemplate.send(JUDGE_TOPIC, new SubmissionMessage(submission.getId(), submission.getProblemId()));
+        kafkaTemplate.send(judgeTopic, new SubmissionMessage(submission.getId(), submission.getProblemId(), submission.getLanguage()));
     }
 
     @Transactional
-    @KafkaListener(topics = RESULT_TOPIC, groupId = "judge-service-group")
+    @KafkaListener(topics = "${spring.kafka.topic.result}", groupId = "judge-service-group")
     public void receiveJudgeResult(ResultMessage message) {
-        log.info("Received judge result for submission: {} for case {}", message.getSubmissionId(), message.getTestcase());
+        log.info("Received judge result for submission: {} for case {}", message.getSubmissionId(), message.getTestCaseId());
         
+        if (Boolean.FALSE.equals(message.getCorrect())) {
+             log.error("System error for submission: {}", message.getSubmissionId());
+             SubmissionConfig errorConfig = new SubmissionConfig();
+             errorConfig.setStatus(-2); // SYSTEM_ERROR
+             errorConfig.setTestResult(new ArrayList<>());
+             try {
+                fileManager.saveSubmissionConfig(message.getSubmissionId(), errorConfig);
+                submissionMapper.updateSubmissionStatusById(message.getSubmissionId(), Status.DONE);
+                submissionCache.remove(message.getSubmissionId());
+             } catch (IOException e) {
+                 log.error("Failed to save error config", e);
+             }
+             return;
+        }
+
         SubmissionConfig config = submissionCache.computeIfAbsent(message.getSubmissionId(), k -> {
             SubmissionConfig c = new SubmissionConfig();
             c.setTestResult(new ArrayList<>());
@@ -81,28 +109,29 @@ public class JudgeService {
         });
 
         synchronized (config) {
-            config.setStatus(message.getStatus());
+            config.setStatus(message.getStatus().intValue());
 
-            if (message.getTestcase() == 0) {
+            if (message.getTestCaseId() == 0) {
                 config.setCompileMessage(message.getMessage());
             } else {
                 TestResult testResult = new TestResult();
-                testResult.setCaseId(message.getTestcase());
-                testResult.setStatus(message.getStatus());
-                testResult.setTime(message.getTimeUsed());
-                testResult.setMemory(message.getMemoryUsed());
+                testResult.setCaseId(message.getTestCaseId().intValue());
+                testResult.setStatus(message.getStatus().intValue());
+                testResult.setTime(message.getTimeUsed().intValue());
+                testResult.setMemory(message.getMemoryUsed().intValue());
                 testResult.setInput(message.getInput());
                 testResult.setUserOutput(message.getUserOutput());
                 testResult.setExpectedOutput(message.getExpectedOutput());
                 testResult.setMessage(message.getMessage());
                 config.getTestResult().add(testResult);
 
-                config.setTimeUsed(Math.max(config.getTimeUsed(), message.getTimeUsed()));
-                config.setMemoryUsed(Math.max(config.getMemoryUsed(), message.getMemoryUsed()));
+                config.setTimeUsed(Math.max(config.getTimeUsed(), message.getTimeUsed().intValue()));
+                config.setMemoryUsed(Math.max(config.getMemoryUsed(), message.getMemoryUsed().intValue()));
             }
 
-            if (Boolean.TRUE.equals(message.getComplete())) {
+            if (Boolean.TRUE.equals(message.getIsOver())) {
                 try {
+                    config.setScore(message.getScore().intValue());
                     fileManager.saveSubmissionConfig(message.getSubmissionId(), config);
                     submissionMapper.updateSubmissionStatusById(message.getSubmissionId(), Status.DONE);
                     submissionCache.remove(message.getSubmissionId());
@@ -129,7 +158,7 @@ public class JudgeService {
             if (submission.getSubmissionTime().plusMinutes(5).isBefore(LocalDateTime.now())) {
                 log.warn("Submission {} timed out", submissionId);
                 SubmissionConfig errorConfig = new SubmissionConfig();
-                errorConfig.setStatus(6); // SYSTEM_ERROR
+                errorConfig.setStatus(-2); // SYSTEM_ERROR
                 errorConfig.setTestResult(new ArrayList<>());
                 
                 fileManager.saveSubmissionConfig(submissionId, errorConfig);
@@ -145,7 +174,12 @@ public class JudgeService {
     }
 
     public String getSubmissionCode(Long submissionId) throws IOException {
-        try (java.io.InputStream inputStream = fileManager.getSubmissionFileStream(submissionId, "code.cpp")) {
+        Submission submission = submissionMapper.findSubmissionById(submissionId);
+        if (submission == null) {
+            throw new BusinessException(CommonErrorCode.RESOURCE_NOT_FOUND, "Submission not found");
+        }
+        String extension = FileSystemManager.getExtensionByLanguage(submission.getLanguage());
+        try (java.io.InputStream inputStream = fileManager.getSubmissionFileStream(submissionId, "code." + extension)) {
             return new String(inputStream.readAllBytes());
         }
     }

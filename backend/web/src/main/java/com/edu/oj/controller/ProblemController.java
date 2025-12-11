@@ -34,8 +34,9 @@ public class ProblemController {
     private ProblemService problemService;
 
     @GetMapping("/")
-    public Problem[] getAllProblems() {
-        return problemService.getAllProblems();
+    public Problem[] getProblems(@RequestParam(required = false) Long pageSize,
+                                @RequestParam(required = false) Long pageNum) {
+        return problemService.getProblems(pageSize, pageNum);
     }
 
     @GetMapping("/{problemId}")

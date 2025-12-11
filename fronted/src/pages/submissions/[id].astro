@@ -1,0 +1,10 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import SubmissionDetail from '../../components/submission/SubmissionDetail.vue';
+
+const { id } = Astro.params;
+---
+
+<Layout>
+  <SubmissionDetail client:only="vue" id={id!} />
+</Layout>

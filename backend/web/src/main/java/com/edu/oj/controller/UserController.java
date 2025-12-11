@@ -31,6 +31,16 @@ public class UserController {
         return userService.findAllUsers();
     }
 
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public User getCurrentUser() {
+        String username = org.springframework.security.core.context.SecurityContextHolder
+            .getContext()
+            .getAuthentication()
+            .getName();  
+        return userService.findUserByUsername(username);
+    }
+
     @PostMapping("/{userId}")
     @PreAuthorize("hasRole('ADMIN') or authentication.principal.id == #userId")
     public void updateUser(@PathVariable Long userId, @RequestBody  User user) {
