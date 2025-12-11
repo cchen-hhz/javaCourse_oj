@@ -33,8 +33,8 @@ public class ProblemService {
         return problem;
     }
 
-    public Problem[] getAllProblems() {
-        return problemMapper.getAllProblems();
+    public Problem[] getProblems(Long pageSize, Long pageNum) {
+        return problemMapper.getProblems(pageSize, pageNum);
     }
 
     public InputStream getProblemFile(Long problemId, String fileName) throws IOException {

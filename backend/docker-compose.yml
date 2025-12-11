@@ -59,7 +59,17 @@ services:
 
 volumes:
   mysql-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ../data/mysql
+      o: bind
   kafka-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ../data/kafka
+      o: bind
   seaweedfs-data:
     driver: local
     driver_opts:

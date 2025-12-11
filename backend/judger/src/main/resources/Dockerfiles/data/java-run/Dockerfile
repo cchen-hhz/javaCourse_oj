@@ -1,7 +1,0 @@
-FROM openjdk:17-jdk-slim
-
-WORKDIR /app
-
-# 直接复用你现在的 run-submission.sh
-COPY ../run-submission.sh /app/run-submission.sh
-RUN chmod +x /app/run-submission.sh

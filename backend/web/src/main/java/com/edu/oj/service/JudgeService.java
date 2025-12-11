@@ -45,6 +45,10 @@ public class JudgeService {
 
     ConcurrentMap<Long, SubmissionConfig> submissionCache = new ConcurrentHashMap<>();
 
+    public Submission[] getSubmissions(Long userId, Long problemId) {
+        return submissionMapper.getSubmissions(userId, problemId);
+    }
+
     @Transactional
     public Long handleSubmission(Long userId, SubmissionDto submissionRequest) throws IOException{
         Submission sub = new Submission(
@@ -154,7 +158,7 @@ public class JudgeService {
             if (submission.getSubmissionTime().plusMinutes(5).isBefore(LocalDateTime.now())) {
                 log.warn("Submission {} timed out", submissionId);
                 SubmissionConfig errorConfig = new SubmissionConfig();
-                errorConfig.setStatus(6); // SYSTEM_ERROR
+                errorConfig.setStatus(-2); // SYSTEM_ERROR
                 errorConfig.setTestResult(new ArrayList<>());
                 
                 fileManager.saveSubmissionConfig(submissionId, errorConfig);

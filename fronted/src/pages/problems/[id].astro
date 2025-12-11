@@ -1,0 +1,10 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ProblemDetail from '../../components/problem/ProblemDetail.vue';
+
+const { id } = Astro.params;
+---
+
+<Layout>
+  <ProblemDetail client:only="vue" id={id!} />
+</Layout>

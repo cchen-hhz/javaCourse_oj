@@ -65,7 +65,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponse> handleAuthenticationException(AuthenticationException e) {
-        return buildResponse(HttpStatus.UNAUTHORIZED.value(), e.getMessage());
+        return buildResponse(HttpStatus.UNAUTHORIZED.value(), "登录失败：用户名或密码错误，或账号已被封禁");
     }
 
     @ExceptionHandler(AccessDeniedException.class)

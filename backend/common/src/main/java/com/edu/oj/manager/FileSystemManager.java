@@ -4,7 +4,7 @@ import com.edu.oj.config.S3Properties;
 import com.edu.oj.entity.SubmissionConfig;
 import com.edu.oj.exceptions.BusinessException;
 import com.edu.oj.exceptions.CommonErrorCode;
-import com.edu.oj.judge.ProblemConfig;
+import com.edu.oj.entity.ProblemConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

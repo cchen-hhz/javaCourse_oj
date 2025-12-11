@@ -7,6 +7,6 @@ import com.edu.oj.entity.Role;
 public class RegisterDto {
     private String username;
     private String password;
-    private String description;
+    private String description; //个人简介
     private Role role = Role.USER; // 默认注册为普通用户
 }
