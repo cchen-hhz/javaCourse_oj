@@ -3,7 +3,7 @@ services:
   backend:
     image: oj-backend:1.0.0
     build:
-      context: .
+      context: ./backend
       dockerfile: dockerfile
     ports: 
       - "8080:8080"
@@ -26,7 +26,7 @@ services:
       MYSQL_ROOT_PASSWORD: root_password
     volumes:
       - mysql-data:/var/lib/mysql
-      - ./sqlschema:/docker-entrypoint-initdb.d:ro
+      - ./backend/sqlschema:/docker-entrypoint-initdb.d:ro
   kafka:
     image: apache/kafka:4.1.1
     hostname: kafka
@@ -53,6 +53,7 @@ services:
     ports:
       - "9333:9333"
       - "8888:8888"
+      - "8333:8333"
     volumes:
       - seaweedfs-data:/data
       - ./seaweedfs_config/s3_config.json:/etc/seaweedfs/s3_config.json:ro
@@ -62,18 +63,18 @@ volumes:
     driver: local
     driver_opts:
       type: none
-      device: ../data/mysql
+      device: ./data/mysql
       o: bind
   kafka-data:
     driver: local
     driver_opts:
       type: none
-      device: ../data/kafka
+      device: ./data/kafka
       o: bind
   seaweedfs-data:
     driver: local
     driver_opts:
       type: none
-      device: ../data/seaweedfs
+      device: ./data/seaweedfs
       o: bind
   
