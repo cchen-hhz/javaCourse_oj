@@ -16,6 +16,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
+import org.springframework.beans.factory.annotation.Value;
 
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -24,6 +25,9 @@ public class SecurityConfig {
 
     @Autowired
     private RestAuthenticationEntryPoint authenticationEntryPoint;
+
+    @Value("${spring.web.cors.allowed-origins}")
+    private String allowedOrigins;
 
     @Bean
     public SessionRegistry sessionRegistry() {
@@ -46,7 +50,7 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(request -> {
                 var corsConfiguration = new org.springframework.web.cors.CorsConfiguration();
-                corsConfiguration.setAllowedOrigins(java.util.List.of("http://localhost:4321"));
+                corsConfiguration.setAllowedOrigins(java.util.Arrays.asList(allowedOrigins.split(",")));
                 corsConfiguration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                 corsConfiguration.setAllowedHeaders(java.util.List.of("*"));
                 corsConfiguration.setAllowCredentials(true);

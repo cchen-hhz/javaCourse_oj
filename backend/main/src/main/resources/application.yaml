@@ -4,6 +4,8 @@ spring:
   web:
     resources:
       add-mappings: false
+    cors:
+      allowed-origins: http://localhost:4321,http://localhost:81,http://localhost,http://nginx:80
   datasource:
     url: jdbc:mysql://localhost:3306/oj_db
     username: oj_admin
