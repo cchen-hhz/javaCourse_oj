@@ -8,8 +8,7 @@
 
 ```sh
 cd backend
-docker compose -f docker-compose.yml up --build
-# 初次使用加 --build
+docker compose -f docker-compose.yml up #--build 
 ```
 
 关停
