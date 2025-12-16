@@ -1,0 +1,7 @@
+FROM amazoncorretto:21-alpine-jdk
+
+RUN apk add --no-cache bash g++ make coreutils
+
+WORKDIR /app
+COPY judge-worker/target/judge-worker-*.jar /app/app.jar
+ENTRYPOINT ["java","-jar","/app/app.jar"]

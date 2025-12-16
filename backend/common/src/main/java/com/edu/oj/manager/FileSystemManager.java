@@ -17,6 +17,7 @@ import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.zip.ZipEntry;
@@ -239,4 +240,32 @@ public class FileSystemManager {
             throw new IOException("Failed to get submission config", e);
         }
     }
+
+    public Path extractProblemToTemp(Long problemId) throws java.io.IOException {
+        String key = "problem/" + problemId + ".zip";
+        software.amazon.awssdk.core.ResponseBytes<software.amazon.awssdk.services.s3.model.GetObjectResponse> bytes =
+                s3Client.getObjectAsBytes(software.amazon.awssdk.services.s3.model.GetObjectRequest.builder()
+                        .bucket(s3Properties.getBucket())
+                        .key(key)
+                        .build());
+        byte[] zipBytes = bytes.asByteArray();
+        java.nio.file.Path root = java.nio.file.Files.createTempDirectory("problem_" + problemId + "_");
+        try (java.util.zip.ZipInputStream zis = new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(zipBytes))) {
+            java.util.zip.ZipEntry e;
+            byte[] buf = new byte[8192];
+            while ((e = zis.getNextEntry()) != null) {
+                if (e.isDirectory()) continue;
+                java.nio.file.Path target = root.resolve(e.getName()).normalize();
+                java.nio.file.Files.createDirectories(target.getParent());
+                try (java.io.OutputStream os = java.nio.file.Files.newOutputStream(target)) {
+                    int n;
+                    while ((n = zis.read(buf)) > 0) {
+                        os.write(buf, 0, n);
+                    }
+                }
+            }
+        }
+        return root;
+    }
+
 }

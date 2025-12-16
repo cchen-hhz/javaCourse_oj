@@ -4,6 +4,7 @@ import com.edu.oj.api.dto.SubmissionMessage;
 import com.edu.oj.executor.CodeExecutor;
 import com.edu.oj.executor.codeRunner.CodeRunner;
 import com.edu.oj.executor.codeRunner.DockerCodeRunner;
+import com.edu.oj.manager.FileSystemManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -14,7 +15,8 @@ public class JudgeKafkaConsumer {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final CodeRunner codeRunner = new DockerCodeRunner();
-    private final CodeExecutor codeExecutor = new CodeExecutor(codeRunner);
+    private final FileSystemManager fileSystemManager = new FileSystemManager();
+    private final CodeExecutor codeExecutor = new CodeExecutor(codeRunner,fileSystemManager);
 
     @KafkaListener(topics = "submission-queue", groupId = "judge-group")
     public void handleSubmission(ConsumerRecord<String, String> record) throws Exception {
