@@ -19,6 +19,8 @@ instance.interceptors.response.use(
       const isLoginRequest = error.config?.url?.includes('/log/login');
       // 判断是否是获取用户信息的请求，如果是，也不进行跳转和报错（静默失败）
       const isUserMeRequest = error.config?.url?.includes('/users/me');
+      // 判断是否是获取提交代码的请求
+      const isSubmissionCodeRequest = error.config?.url?.match(/\/submissions\/\d+\/code/);
 
       if (status === 401) {
         if (!isLoginRequest && !isUserMeRequest) {
@@ -27,6 +29,16 @@ instance.interceptors.response.use(
             window.location.href = '/login';
           }
         }
+      } else if (status === 403) {
+        // 如果是获取代码的请求被拒绝，不弹窗，交给组件处理
+        if (isSubmissionCodeRequest) {
+            return Promise.reject(error);
+        }
+        // 如果是 /users/me 被拒绝 (可能是配置问题导致未登录返回 403)，也静默
+        if (isUserMeRequest) {
+            return Promise.reject(error);
+        }
+        ElMessage.error(data.message || '权限不足 (Access Denied)');
       } else if (status === 500) {
         if (data && data.message) {
           ElMessage.error(`服务器错误: ${data.message}`);

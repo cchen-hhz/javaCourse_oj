@@ -19,6 +19,16 @@
         <h3 class="text-lg font-bold mb-2">代码</h3>
         <pre class="bg-gray-100 p-4 rounded overflow-x-auto text-sm font-mono"><code>{{ code }}</code></pre>
     </div>
+    <div v-else-if="codeForbidden" class="mb-6">
+        <h3 class="text-lg font-bold mb-2">代码</h3>
+        <el-alert
+            title="无法查看代码"
+            type="warning"
+            description="您没有权限查看此提交的代码。"
+            show-icon
+            :closable="false"
+        />
+    </div>
     
     <!-- Compile Error -->
     <div v-if="result.status === -1" class="mb-6">
@@ -110,9 +120,11 @@ const props = defineProps<{
 const result = ref<any>(null);
 const code = ref('');
 const loading = ref(true);
+const codeForbidden = ref(false);
 
 const fetchSubmission = async () => {
   loading.value = true;
+  codeForbidden.value = false;
   try {
     // Fetch result
     const resResult = await axios.get(`/submissions/${props.id}/result`);
@@ -122,8 +134,11 @@ const fetchSubmission = async () => {
     try {
         const resCode = await axios.get(`/submissions/${props.id}/code`);
         code.value = resCode.data;
-    } catch (e) {
+    } catch (e: any) {
         // Ignore code fetch error (e.g. forbidden), just don't show code
+        if (e.response && e.response.status === 403) {
+            codeForbidden.value = true;
+        }
     }
 
   } catch (error) {
