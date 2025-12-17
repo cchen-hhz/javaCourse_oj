@@ -1,6 +1,5 @@
 services:
   backend:
-    image: oj-backend:1.0.0
     build:
       context: ./backend
       dockerfile: dockerfile
@@ -26,7 +25,7 @@ services:
       MYSQL_PASSWORD: oj_token
       MYSQL_ROOT_PASSWORD: root_password
     volumes:
-      - mysql-data:/var/lib/mysql
+      - ./data/mysql:/var/lib/mysql
       - ./sqlschema:/docker-entrypoint-initdb.d:ro
 
   kafka:
@@ -48,7 +47,7 @@ services:
       - KAFKA_NUM_PARTITIONS=2
       - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
     volumes:
-      - kafka-data:/var/lib/kafka/data
+      - ./data/kafka:/var/lib/kafka/data
 
   seaweedfs:
     image: chrislusf/seaweedfs:4.02
@@ -58,7 +57,7 @@ services:
       - "8888:8888"
       - "8333:8333"
     volumes:
-      - seaweedfs-data:/data
+      - ./data/seaweedfs:/data
       - ./seaweedfs_config/s3_config.json:/etc/seaweedfs/s3_config.json:ro
 
   frontend:
@@ -102,22 +101,4 @@ services:
       - SPRING_KAFKA_CONSUMER_MAX_POLL_RECORDS=1
       - KAFKA_MAX_POLL=1
       - KAFKA_MAX_POLL_INTERVAL_MS=1800000
-volumes:
-  mysql-data:
-    driver: local
-    driver_opts:
-      type: none
-      device: ./data/mysql
-      o: bind
-  kafka-data:
-    driver: local
-    driver_opts:
-      type: none
-      device: ./data/kafka
-      o: bind
-  seaweedfs-data:
-    driver: local
-    driver_opts:
-      type: none
-      device: ./data/seaweedfs
-      o: bind
+
