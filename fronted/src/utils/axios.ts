@@ -17,9 +17,11 @@ instance.interceptors.response.use(
       
       // 判断是否是登录请求，如果是登录请求导致的 401，不进行跳转，交给组件处理
       const isLoginRequest = error.config?.url?.includes('/log/login');
+      // 判断是否是获取用户信息的请求，如果是，也不进行跳转和报错（静默失败）
+      const isUserMeRequest = error.config?.url?.includes('/users/me');
 
       if (status === 401) {
-        if (!isLoginRequest) {
+        if (!isLoginRequest && !isUserMeRequest) {
           ElMessage.error('未登录或登录已过期，请重新登录');
           if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
             window.location.href = '/login';

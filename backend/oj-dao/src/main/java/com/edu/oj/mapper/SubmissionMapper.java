@@ -35,9 +35,11 @@ public interface SubmissionMapper {
                         AND problem_id = #{problemId}
                     </if>
                 </where>
+                ORDER BY id DESC
+                LIMIT #{limit} OFFSET #{offset}
             </script>
             """)
-    Submission[] getSubmissions(Long userId, Long problemId);
+    Submission[] getSubmissions(Long userId, Long problemId, int limit, int offset);
 
     @Update("""
             UPDATE submissions 

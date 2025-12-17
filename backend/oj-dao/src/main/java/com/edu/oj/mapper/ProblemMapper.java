@@ -17,6 +17,7 @@ public interface ProblemMapper {
     @Select("""
             <script>
                 SELECT * FROM problems
+                ORDER BY id
                 <if test="pageSize != null and pageNum != null">
                     <bind name="offset" value="(pageNum - 1) * pageSize" />
                     LIMIT #{pageSize} OFFSET #{offset}

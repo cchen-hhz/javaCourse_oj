@@ -31,8 +31,10 @@ public class SubmissionController {
 
     @GetMapping("/")
     public Submission[] getSubmissions(@RequestParam(required = false) Long userId,
-                                       @RequestParam(required = false) Long problemId) {
-        return judgeService.getSubmissions(userId, problemId);
+                                       @RequestParam(required = false) Long problemId,
+                                       @RequestParam(defaultValue = "1") int page,
+                                       @RequestParam(defaultValue = "20") int size) {
+        return judgeService.getSubmissions(userId, problemId, page, size);
     }
     @PostMapping
     @PreAuthorize("isAuthenticated()")

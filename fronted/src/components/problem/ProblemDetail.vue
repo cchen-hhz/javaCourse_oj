@@ -20,7 +20,7 @@
         <!-- Let's assume we need to fetch description.md or similar if not in entity. -->
         <!-- For now, display what's in entity or a placeholder -->
         <div v-if="problem.description" v-html="renderMarkdown(problem.description)"></div>
-        <div v-else class="text-gray-500 italic">暂无描述 (或需下载描述文件)</div>
+        <div v-else class="text-gray-500 italic">没有描述</div>
     </div>
 
     <div class="border-t pt-6">

@@ -92,6 +92,7 @@ public class JudgeExecutor {
                 compileMsg.setStatus(ST_COMPILE_ERROR);
                 compileMsg.setMessage(trunc(cr.log, 8000));
                 compileMsg.setIsOver(true);
+                compileMsg.setScore(0L);
                 out.accept(compileMsg);
                 return;
             } else {
@@ -171,23 +172,23 @@ public class JudgeExecutor {
                 rm.setUserOutput(usrStr);
                 rm.setMessage(msg);
                 rm.setCorrect(true);
-                rm.setIsOver(false);
-                out.accept(rm);
+                
+                // Logic for IsOver:
+                // If status is NOT ACCEPTED, we stop here and mark IsOver=true.
+                // If status IS ACCEPTED, we check if it's the last case. If so, IsOver=true.
+                if (status != ST_ACCEPTED) {
+                    rm.setIsOver(true);
+                    out.accept(rm);
+                    return; // Stop judging
+                } else {
+                    if (i == inputs.size() - 1) {
+                        rm.setIsOver(true);
+                    } else {
+                        rm.setIsOver(false);
+                    }
+                    out.accept(rm);
+                }
             }
-
-            ResultMessage finalMsg = new ResultMessage();
-            finalMsg.setSubmissionId(sm.submissionId);
-            finalMsg.setProblemId(sm.problemId);
-            finalMsg.setTestCaseId(numCases);
-            finalMsg.setNumCases(numCases);
-            finalMsg.setScore(totalScore);
-            finalMsg.setTimeUsed(0L);
-            finalMsg.setMemoryUsed(0L);
-            finalMsg.setStatus(ST_ACCEPTED);
-            finalMsg.setMessage("judge_done");
-            finalMsg.setCorrect(true);
-            finalMsg.setIsOver(true);
-            out.accept(finalMsg);
 
         } catch (Exception e) {
             ResultMessage rm = systemError(sm, "system_error: " + e.getMessage());

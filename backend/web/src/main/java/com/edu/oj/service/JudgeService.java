@@ -45,8 +45,9 @@ public class JudgeService {
 
     ConcurrentMap<Long, SubmissionConfig> submissionCache = new ConcurrentHashMap<>();
 
-    public Submission[] getSubmissions(Long userId, Long problemId) {
-        return submissionMapper.getSubmissions(userId, problemId);
+    public Submission[] getSubmissions(Long userId, Long problemId, int page, int size) {
+        int offset = (page - 1) * size;
+        return submissionMapper.getSubmissions(userId, problemId, size, offset);
     }
 
     @Transactional
@@ -109,6 +110,22 @@ public class JudgeService {
         });
 
         synchronized (config) {
+
+            if (message.getCorrect() != true) {
+                log.error("System error for submission: {}", message.getSubmissionId());
+                SubmissionConfig errorConfig = new SubmissionConfig();
+                errorConfig.setStatus(-2); // SYSTEM_ERROR
+                errorConfig.setTestResult(new ArrayList<>());
+                try {
+                   fileManager.saveSubmissionConfig(message.getSubmissionId(), errorConfig);
+                   submissionMapper.updateSubmissionStatusById(message.getSubmissionId(), Status.DONE);
+                   submissionCache.remove(message.getSubmissionId());
+                } catch (IOException e) {
+                    log.error("Failed to save error config", e);    
+                }
+                return;
+            }
+
             config.setStatus(message.getStatus().intValue());
 
             if (message.getTestCaseId() == 0) {
@@ -132,7 +149,8 @@ public class JudgeService {
 
             if (Boolean.TRUE.equals(message.getIsOver())) {
                 try {
-                    config.setScore(message.getScore().intValue());
+                    int score = message.getScore() != null ? message.getScore().intValue() : 0;
+                    config.setScore(score);
                     fileManager.saveSubmissionConfig(message.getSubmissionId(), config);
                     submissionMapper.updateSubmissionStatusById(message.getSubmissionId(), Status.DONE);
                     submissionCache.remove(message.getSubmissionId());
