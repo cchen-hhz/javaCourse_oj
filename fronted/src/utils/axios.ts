@@ -2,7 +2,7 @@ import axios from 'axios';
 import { ElMessage } from 'element-plus';
 
 const instance = axios.create({
-  baseURL: import.meta.env.PROD ? 'http://localhost:8080/api' : '/api',
+  baseURL: import.meta.env.PUBLIC_API_URL || '/api',
   timeout: 10000,
   withCredentials: true, // Important for session cookies
 });
