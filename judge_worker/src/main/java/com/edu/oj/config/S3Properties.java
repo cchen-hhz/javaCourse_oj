@@ -1,7 +1,6 @@
 package com.edu.oj.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 @ConfigurationProperties(prefix = "s3")
 public class S3Properties {

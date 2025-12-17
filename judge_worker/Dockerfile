@@ -19,10 +19,13 @@ WORKDIR /app
 # Install runtime dependencies (g++ for compiling C++, bash for shell execution)
 RUN apk add --no-cache g++ bash
 
+# Copy the jar from the builder stage
+COPY --from=builder /app/target/judge-worker-1.0.0.jar /app/judge-worker.jar
+
 # Set environment variables
 ENV SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
 ENV KAFKA_SUBMISSION_TOPIC=submission-queue
 ENV KAFKA_RESULT_TOPIC=judge-result
 
 # Run the application
-CMD ["java", "-jar", "/app/judge-worker-1.0.0.jar"]
+CMD ["java", "-jar", "/app/judge-worker.jar"]

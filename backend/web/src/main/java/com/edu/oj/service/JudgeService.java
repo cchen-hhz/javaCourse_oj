@@ -127,6 +127,7 @@ public class JudgeService {
 
                 config.setTimeUsed(Math.max(config.getTimeUsed(), message.getTimeUsed().intValue()));
                 config.setMemoryUsed(Math.max(config.getMemoryUsed(), message.getMemoryUsed().intValue()));
+                config.setStatus(message.getStatus().intValue());
             }
 
             if (Boolean.TRUE.equals(message.getIsOver())) {

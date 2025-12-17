@@ -16,14 +16,14 @@ import java.util.stream.Stream;
 
 public class JudgeExecutor {
 
-    public static final long ST_START = 0;
-    public static final long ST_ACCEPTED = 1;
-    public static final long ST_WRONG_ANSWER = 2;
-    public static final long ST_TIME_LIMIT = 3;
-    public static final long ST_MEMORY_LIMIT = 4;
-    public static final long ST_RUNTIME_ERROR = 5;
-    public static final long ST_COMPILE_ERROR = 6;
-    public static final long ST_SYSTEM_ERROR = 7;
+    public static final long ST_ACCEPTED = 0;
+    public static final long ST_WRONG_ANSWER = 1;
+    public static final long ST_TIME_LIMIT = 2;
+    public static final long ST_MEMORY_LIMIT = 3;
+    public static final long ST_RUNTIME_ERROR = 4;
+    public static final long ST_WAITING = 7;
+    public static final long ST_COMPILE_ERROR = -1;
+    public static final long ST_SYSTEM_ERROR = -2;
 
     private final FileSystemManager fsm;
 
@@ -36,7 +36,7 @@ public class JudgeExecutor {
         start.setSubmissionId(sm.submissionId);
         start.setProblemId(sm.problemId);
         start.setTestCaseId(0L);
-        start.setStatus(ST_START);
+        start.setStatus(ST_WAITING);
         start.setCorrect(true);
         start.setIsOver(false);
         start.setMessage("judge_start");
@@ -95,7 +95,7 @@ public class JudgeExecutor {
                 out.accept(compileMsg);
                 return;
             } else {
-                compileMsg.setStatus(ST_START);
+                compileMsg.setStatus(ST_WAITING);
                 compileMsg.setMessage("compile_ok");
                 compileMsg.setIsOver(false);
                 out.accept(compileMsg);
@@ -183,7 +183,7 @@ public class JudgeExecutor {
             finalMsg.setScore(totalScore);
             finalMsg.setTimeUsed(0L);
             finalMsg.setMemoryUsed(0L);
-            finalMsg.setStatus(ST_START);
+            finalMsg.setStatus(ST_ACCEPTED);
             finalMsg.setMessage("judge_done");
             finalMsg.setCorrect(true);
             finalMsg.setIsOver(true);
