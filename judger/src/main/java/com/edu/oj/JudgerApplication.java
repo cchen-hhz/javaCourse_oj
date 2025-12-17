@@ -5,6 +5,7 @@ import com.edu.oj.executor.CodeExecutor;
 import com.edu.oj.executor.codeRunner.CodeRunner;
 import com.edu.oj.executor.codeRunner.DockerCodeRunner;
 import com.edu.oj.judge.JudgeResult;
+import com.edu.oj.manager.FileSystemManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -30,7 +31,8 @@ public class JudgerApplication {
 
         ObjectMapper mapper = new ObjectMapper();
         CodeRunner codeRunner = new DockerCodeRunner();
-        CodeExecutor executor = new CodeExecutor(codeRunner);
+        FileSystemManager fileSystemManager = new FileSystemManager();
+        CodeExecutor executor = new CodeExecutor(codeRunner,fileSystemManager);
 
         System.out.println("JudgerApplication started, waiting messages from topic submission-queue...");
 
