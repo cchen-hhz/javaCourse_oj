@@ -132,6 +132,7 @@ public class JudgeService {
 
             if (message.getTestCaseId() == 0) {
                 config.setCompileMessage(message.getMessage());
+                submissionMapper.updateSubmissionStatusById(message.getSubmissionId(), Status.JUDGING); 
             } else {
                 TestResult testResult = new TestResult();
                 testResult.setCaseId(message.getTestCaseId().intValue());
