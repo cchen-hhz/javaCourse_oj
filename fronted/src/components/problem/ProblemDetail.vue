@@ -14,13 +14,13 @@
         <div><span class="font-bold">测试点数量:</span> {{ config.numberCount }}</div>
     </div>
 
-    <div class="prose max-w-none mb-8">
+    <div class="prose max-w-none mb-8 p-6 border border-gray-300 rounded-lg shadow-sm mx-auto">
         <!-- Assuming description is markdown or html. If it's a file, we might need to fetch it separately. -->
         <!-- Based on controller, we have getProblemFile. The Problem entity might just have metadata. -->
         <!-- Let's assume we need to fetch description.md or similar if not in entity. -->
         <!-- For now, display what's in entity or a placeholder -->
         <div v-if="problem.description" v-html="renderMarkdown(problem.description)"></div>
-        <div v-else class="text-gray-500 italic">没有描述</div>
+        <div v-else class="text-gray-500 italic text-center">没有描述</div>
     </div>
 
     <div class="border-t pt-6">
@@ -38,6 +38,7 @@
             :rows="15"
             placeholder="在此输入代码..."
             class="font-mono mb-4"
+            @keydown.tab.prevent="handleTab"
         />
         
         <el-button type="primary" @click="submitCode" :loading="submitting">提交</el-button>
@@ -56,7 +57,10 @@ import { ref, onMounted } from 'vue';
 import axios from '../../utils/axios';
 import { ElMessage } from 'element-plus';
 import MarkdownIt from 'markdown-it';
+import mk from 'markdown-it-katex';
+import mark from 'markdown-it-mark';
 import { Loading } from '@element-plus/icons-vue';
+import 'katex/dist/katex.min.css';
 
 const props = defineProps<{
   id: string;
@@ -80,11 +84,29 @@ const loading = ref(true);
 const code = ref('');
 const language = ref('cpp');
 const submitting = ref(false);
-const md = new MarkdownIt();
+const md = new MarkdownIt({
+    html: true,
+    linkify: true,
+    typographer: true
+}).use(mk).use(mark);
 
 const renderMarkdown = (text: string) => {
     return md.render(text);
 }
+
+const handleTab = (e: KeyboardEvent) => {
+    const textarea = e.target as HTMLTextAreaElement;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+
+    // Insert 4 spaces
+    code.value = code.value.substring(0, start) + "    " + code.value.substring(end);
+
+    // Move cursor
+    setTimeout(() => {
+        textarea.selectionStart = textarea.selectionEnd = start + 4;
+    }, 0);
+};
 
 const parseConfig = (yamlStr: string): ProblemConfig => {
     const config: any = {};
