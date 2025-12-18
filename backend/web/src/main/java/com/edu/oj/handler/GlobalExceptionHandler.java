@@ -19,11 +19,31 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import software.amazon.awssdk.services.s3.model.S3Exception;
+import java.io.IOException;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e) {
+        return buildResponse(HttpStatus.PAYLOAD_TOO_LARGE.value(), "File size exceeds the maximum limit");
+    }
+
+    @ExceptionHandler(S3Exception.class)
+    public ResponseEntity<ErrorResponse> handleS3Exception(S3Exception e) {
+        log.error("S3 Storage Error", e);
+        return buildResponse(HttpStatus.SERVICE_UNAVAILABLE.value(), "File storage service is currently unavailable");
+    }
+
+    @ExceptionHandler(IOException.class)
+    public ResponseEntity<ErrorResponse> handleIOException(IOException e) {
+        log.error("IO Error", e);
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "File processing error: " + e.getMessage());
+    }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ErrorResponse> handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException e) {

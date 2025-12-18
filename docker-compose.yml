@@ -99,6 +99,6 @@ services:
       # 下面两项用于避免“consumer poll timeout”导致 worker 被踢出消费组（按你最坏评测时长改大）
       - SPRING_KAFKA_CONSUMER_PROPERTIES_MAX_POLL_INTERVAL_MS=1800000
       - SPRING_KAFKA_CONSUMER_MAX_POLL_RECORDS=1
-      - KAFKA_MAX_POLL=1
-      - KAFKA_MAX_POLL_INTERVAL_MS=1800000
+    ulimits:
+      stack: -1
 
