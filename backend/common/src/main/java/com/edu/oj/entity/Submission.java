@@ -14,7 +14,9 @@ public class Submission {
     private LocalDateTime submissionTime;
     private Status status;
     private Long userId;
+    private String userName;
     private Long problemId;
+    private String problemTitle;
     private String language;
     private Short score;
 }

@@ -18,24 +18,35 @@ public interface SubmissionMapper {
     int submissionCount();
 
     @Select("""
-            SELECT * 
+            SELECT 
+                submissions.*, 
+                problems.title AS problem_title, 
+                users.username AS user_name
             FROM submissions 
-            WHERE id = #{submissionId}
+            JOIN problems ON submissions.problem_id = problems.id
+            JOIN users ON submissions.user_id = users.id
+            WHERE submissions.id = #{submissionId}
             """)
     Submission findSubmissionById(Long submissionId);
 
     @Select("""
             <script>
-                SELECT * FROM submissions
+                SELECT 
+                    submissions.*,
+                    problems.title AS problem_title,
+                    users.username AS user_name
+                FROM submissions
+                JOIN problems ON submissions.problem_id = problems.id
+                JOIN users ON submissions.user_id = users.id
                 <where>
                     <if test="userId != null">
-                        AND user_id = #{userId}
+                        AND submissions.user_id = #{userId}
                     </if>
                     <if test="problemId != null">
-                        AND problem_id = #{problemId}
+                        AND submissions.problem_id = #{problemId}
                     </if>
                 </where>
-                ORDER BY id DESC
+                ORDER BY submissions.id DESC
                 LIMIT #{limit} OFFSET #{offset}
             </script>
             """)

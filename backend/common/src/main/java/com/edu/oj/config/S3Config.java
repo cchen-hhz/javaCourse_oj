@@ -21,6 +21,8 @@ public class S3Config {
                 .credentialsProvider(StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(s3Properties.getAccessKey(), s3Properties.getSecretKey())))
                 .serviceConfiguration(S3Configuration.builder()
+                        .checksumValidationEnabled(false)
+                        .chunkedEncodingEnabled(true)
                         .pathStyleAccessEnabled(true) // Important for MinIO/SeaweedFS
                         .build())
                 .build();

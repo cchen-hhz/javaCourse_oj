@@ -57,7 +57,9 @@ public class JudgeService {
             LocalDateTime.now(),
             Status.PENDING,
             userId,
+            null,
             submissionRequest.getProblemId(),
+            null,
             submissionRequest.getLanguage(),
             (short)0
         );

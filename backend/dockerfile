@@ -2,6 +2,16 @@ FROM maven:4.0.0-rc-5-amazoncorretto-25-debian
 
 WORKDIR /app
 
+COPY pom.xml .
+COPY parent/pom.xml parent/
+COPY common/pom.xml common/
+COPY oj-dao/pom.xml oj-dao/
+COPY security/pom.xml security/
+COPY web/pom.xml web/
+COPY main/pom.xml main/
+
+RUN mvn dependency:go-offline -B
+
 COPY . .
 
 RUN ["mvn", "clean", "install", "-DskipTests"]

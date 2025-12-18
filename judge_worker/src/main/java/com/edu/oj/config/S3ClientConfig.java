@@ -27,6 +27,11 @@ public class S3ClientConfig {
                 .credentialsProvider(StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(props.getAccessKey(), props.getSecretKey())
                 ))
+                .serviceConfiguration(S3Configuration.builder()
+                        .checksumValidationEnabled(false)
+                        .chunkedEncodingEnabled(true)
+                        .pathStyleAccessEnabled(true) // Important for MinIO/SeaweedFS
+                        .build())
                 .build();
     }
 }
