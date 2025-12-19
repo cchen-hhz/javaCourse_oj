@@ -87,6 +87,7 @@ services:
     depends_on:
       - kafka
       - seaweedfs
+    pids_limit: 100
     environment:
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - S3_ENDPOINT=http://seaweedfs:8333

@@ -29,10 +29,16 @@ public class SandboxRunner {
             // Use 'exec' to replace the shell process with the target process, 
             // ensuring the PID remains the same for memory monitoring and signal handling.
             String cmd = String.format("ulimit -s %d; exec %s", stackSizeKb, exe.toAbsolutePath().toString());
-            pb = new ProcessBuilder("/bin/sh", "-c", cmd);
+            // Run as code_runner user for isolation
+            // We use 'su' to switch user. The Java process must be running as root.
+            pb = new ProcessBuilder("su", "code_runner", "-s", "/bin/bash", "-c", cmd);
         } else {
-            pb = new ProcessBuilder(exe.toAbsolutePath().toString());
+            pb = new ProcessBuilder("su", "code_runner", "-s", "/bin/bash", "-c", exe.toAbsolutePath().toString());
         }
+
+        // Clear environment variables to prevent leakage of sensitive info
+        pb.environment().clear();
+        pb.environment().put("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
 
         pb.redirectInput(input.toFile());
         pb.redirectOutput(userOut.toFile());

@@ -19,6 +19,9 @@ WORKDIR /app
 # Install runtime dependencies (g++ for compiling C++, bash for shell execution)
 RUN apk add --no-cache g++ bash
 
+# Create a non-root user for running user code
+RUN adduser -D -u 10001 code_runner
+
 # Copy the jar from the builder stage
 COPY --from=builder /app/target/judge-worker-1.0.0.jar /app/judge-worker.jar
 

@@ -14,7 +14,7 @@
         <div><span class="font-bold">测试点数量:</span> {{ config.numberCount }}</div>
     </div>
 
-    <div class="prose max-w-none mb-8 p-6 border border-gray-300 rounded-lg shadow-sm mx-auto">
+    <div class="markdown-body mb-8 p-6 border border-gray-300 rounded-lg shadow-sm mx-auto">
         <!-- Assuming description is markdown or html. If it's a file, we might need to fetch it separately. -->
         <!-- Based on controller, we have getProblemFile. The Problem entity might just have metadata. -->
         <!-- Let's assume we need to fetch description.md or similar if not in entity. -->
@@ -57,10 +57,12 @@ import { ref, onMounted } from 'vue';
 import axios from '../../utils/axios';
 import { ElMessage } from 'element-plus';
 import MarkdownIt from 'markdown-it';
-import mk from 'markdown-it-katex';
+import tm from 'markdown-it-texmath';
+import katex from 'katex';
 import mark from 'markdown-it-mark';
 import { Loading } from '@element-plus/icons-vue';
 import 'katex/dist/katex.min.css';
+import 'github-markdown-css/github-markdown.css';
 
 const props = defineProps<{
   id: string;
@@ -88,7 +90,7 @@ const md = new MarkdownIt({
     html: true,
     linkify: true,
     typographer: true
-}).use(mk).use(mark);
+}).use(tm, { engine: katex, delimiters: 'dollars' }).use(mark);
 
 const renderMarkdown = (text: string) => {
     return md.render(text);

@@ -62,6 +62,14 @@ public class JudgeExecutor {
             long numCases = inputs.size();
 
             work = Files.createTempDirectory("judge_" + sm.submissionId + "_");
+            // Allow code_runner to access this directory
+            try {
+                Set<java.nio.file.attribute.PosixFilePermission> perms = java.nio.file.attribute.PosixFilePermissions.fromString("rwxrwxrwx");
+                Files.setPosixFilePermissions(work, perms);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
             Path code = work.resolve("code.cpp");
             String ext = FileSystemManager.getExtensionByLanguage(sm.language);
             try (InputStream is = fsm.getSubmissionFileStream(sm.submissionId, "code." + ext)) {
